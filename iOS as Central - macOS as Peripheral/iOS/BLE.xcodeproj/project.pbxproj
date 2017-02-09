@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		9856618C1E4A2EB30070CAF1 /* Flow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9856618B1E4A2EB30070CAF1 /* Flow.swift */; };
+		98701B121E4CAE0F005E14F5 /* BluetoothManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98701B111E4CAE0F005E14F5 /* BluetoothManager.swift */; };
 		98F659411E4A257900A63CB1 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98F659401E4A257900A63CB1 /* AppDelegate.swift */; };
 		98F659431E4A257900A63CB1 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98F659421E4A257900A63CB1 /* ViewController.swift */; };
 		98F659461E4A257900A63CB1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 98F659441E4A257900A63CB1 /* Main.storyboard */; };
@@ -17,6 +18,7 @@
 
 /* Begin PBXFileReference section */
 		9856618B1E4A2EB30070CAF1 /* Flow.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Flow.swift; sourceTree = "<group>"; };
+		98701B111E4CAE0F005E14F5 /* BluetoothManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 		98F6593D1E4A257900A63CB1 /* BLE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BLE.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		98F659401E4A257900A63CB1 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		98F659421E4A257900A63CB1 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -63,6 +65,7 @@
 				98F659491E4A257900A63CB1 /* LaunchScreen.storyboard */,
 				98F6594C1E4A257900A63CB1 /* Info.plist */,
 				9856618B1E4A2EB30070CAF1 /* Flow.swift */,
+				98701B111E4CAE0F005E14F5 /* BluetoothManager.swift */,
 			);
 			path = BLE;
 			sourceTree = "<group>";
@@ -147,6 +150,7 @@
 			files = (
 				9856618C1E4A2EB30070CAF1 /* Flow.swift in Sources */,
 				98F659431E4A257900A63CB1 /* ViewController.swift in Sources */,
+				98701B121E4CAE0F005E14F5 /* BluetoothManager.swift in Sources */,
 				98F659411E4A257900A63CB1 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
