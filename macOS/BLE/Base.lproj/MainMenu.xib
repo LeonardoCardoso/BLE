@@ -691,17 +691,17 @@
                 <subviews>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" allowsCharacterPickerTouchBarItem="NO" translatesAutoresizingMaskIntoConstraints="NO" id="HRS-qD-5ly">
                         <rect key="frame" x="18" y="262" width="444" height="17"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="LABEL" id="h1z-EW-Ygh">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" title="[:]" id="h1z-EW-Ygh">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
                     <button verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="n25-D4-sVS">
-                        <rect key="frame" x="183" y="217" width="115" height="32"/>
-                        <buttonCell key="cell" type="push" title="Discover" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="ANh-fO-B0N">
+                        <rect key="frame" x="205" y="217" width="71" height="32"/>
+                        <buttonCell key="cell" type="push" title="TAP" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="ANh-fO-B0N">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="system" size="19"/>
+                            <font key="font" metaFont="system" size="17"/>
                         </buttonCell>
                         <connections>
                             <action selector="discover:" target="lEt-cj-UZT" id="1qU-a1-Z64"/>
