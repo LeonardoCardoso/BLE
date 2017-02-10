@@ -7,102 +7,73 @@
 //
 
 import Foundation
-import CoreBluetooth
+import BluetoothKit
 
 class BluetoothManager: NSObject {
 
     // MARK: - Properties
     static let shared: BluetoothManager = BluetoothManager()
+
     let restoreIdentifier: String = "62443cc7-15bc-4136-bf5d-0ad80c459215"
     let serviceUUID: String = "0cdbe648-eed0-11e6-bc64-92361f002671"
     let characteristicUUID: String = "199ab74c-eed0-11e6-bc64-92361f002672"
     let localName = "Peripheral - macOS"
-    var manager: CBPeripheralManager?
+
+    let peripheral = BKPeripheral()
 
     // MARK: - Initializers
     override init () {
 
         super.init()
 
-        self.manager = CBPeripheralManager(delegate: self, queue: nil)
+        self.peripheral.delegate = self
+
+        do {
+
+            guard
+                let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID?,
+                let characteristicUUID: UUID = NSUUID(uuidString: self.characteristicUUID) as UUID?
+                else { return }
+
+            let configuration = BKPeripheralConfiguration(
+                dataServiceUUID: serviceUUID,
+                dataServiceCharacteristicUUID: characteristicUUID,
+                localName: self.localName
+            )
+
+            try self.peripheral.startWithConfiguration(configuration)
+            print("startWithConfiguration")
+            // You are now ready for incoming connections
+
+        } catch let error {
+
+            // Handle error.
+            print(error)
+            
+        }
 
     }
 
     // MARK: - Functions
-    func discover() { }
+    func discover() {
+
+    }
 
 }
 
-// MARK: - CBPeripheralManagerDelegate
-extension BluetoothManager: CBPeripheralManagerDelegate {
+//// MARK: - CBPeripheralManagerDelegate
+extension BluetoothManager: BKPeripheralDelegate {
 
-    func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveRead request: CBATTRequest) {
+    func peripheral(_ peripheral: BKPeripheral, remoteCentralDidConnect remoteCentral: BKRemoteCentral) {
 
-        print("didReceiveRead request: \(request.central.identifier)")
-
-    }
-
-    func peripheralManagerDidStartAdvertising(_ peripheral: CBPeripheralManager, error: Error?) {
-
-        print("didStartAdvertising")
-        print("error: \(error)")
+        print("remoteCentralDidConnect remoteCentral:")
 
     }
 
-    func peripheralManager(_ peripheral: CBPeripheralManager, willRestoreState dict: [String : Any]) {
+    func peripheral(_ peripheral: BKPeripheral, remoteCentralDidDisconnect remoteCentral: BKRemoteCentral) {
 
-        print("willRestoreState")
-        print("dict: \(dict)")
-
-    }
-
-    func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
-
-        print("didSubscribeTo characteristic: \(characteristic.value)")
-        print("central: \(central.identifier)")
+        print("remoteCentralDidDisconnect remoteCentral:")
 
     }
 
-    func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
-
-        print("didUnsubscribeFrom characteristic: \(characteristic.value)")
-        print("central: \(central.identifier)")
-
-    }
-
-    func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveWrite requests: [CBATTRequest]) {
-
-        print("didReceiveWrite requests: \(requests)")
-
-
-    }
-
-    func peripheralManager(_ peripheral: CBPeripheralManager, didAdd service: CBService, error: Error?) {
-
-        print("didAdd service: \(service.characteristics)")
-        print("error: \(error)")
-
-    }
-
-    func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
-
-        print("managerIsReady")
-
-    }
-
-    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
-
-        print("didUpdateState")
-
-        if peripheral.state == .poweredOn {
-
-//            guard let serviceUUID: UUID = UUID(uuidString: self.serviceUUID) else { return }
-//            peripheral.discoverServices([CBUUID(nsuuid: serviceUUID)])
-            peripheral.startAdvertising(["Hallo": "Wie geht's"])
-        
-        }
-
-    }
-    
-    
 }

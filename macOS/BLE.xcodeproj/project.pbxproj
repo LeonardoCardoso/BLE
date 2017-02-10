@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1A5BEFA3983D3D9DD3A46D6F /* Pods_BLE.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 666068D8C3183C9184902FFC /* Pods_BLE.framework */; };
 		9821C3DC1E4C9FB40092762E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9821C3DB1E4C9FB40092762E /* AppDelegate.swift */; };
 		9821C3DE1E4C9FB40092762E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9821C3DD1E4C9FB40092762E /* Assets.xcassets */; };
 		9821C3E11E4C9FB40092762E /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 9821C3DF1E4C9FB40092762E /* MainMenu.xib */; };
@@ -15,6 +16,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		666068D8C3183C9184902FFC /* Pods_BLE.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_BLE.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9821C3D81E4C9FB40092762E /* BLE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BLE.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9821C3DB1E4C9FB40092762E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		9821C3DD1E4C9FB40092762E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -25,6 +27,8 @@
 		984BED161E4CC71B007EDD96 /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
 		984BED1B1E4CCD1E007EDD96 /* IOBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOBluetooth.framework; path = System/Library/Frameworks/IOBluetooth.framework; sourceTree = SDKROOT; };
 		98701B131E4CAE32005E14F5 /* BluetoothManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
+		AA02DCF0DB192CC4061F469C /* Pods-BLE.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BLE.debug.xcconfig"; path = "Pods/Target Support Files/Pods-BLE/Pods-BLE.debug.xcconfig"; sourceTree = "<group>"; };
+		AD3BD8125667F413C2045E55 /* Pods-BLE.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BLE.release.xcconfig"; path = "Pods/Target Support Files/Pods-BLE/Pods-BLE.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +36,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A5BEFA3983D3D9DD3A46D6F /* Pods_BLE.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -44,6 +49,7 @@
 				9821C3DA1E4C9FB40092762E /* BLE */,
 				9821C3D91E4C9FB40092762E /* Products */,
 				984BED151E4CC71B007EDD96 /* Frameworks */,
+				FC749E5D0A37E305D00FC5BE /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -74,8 +80,18 @@
 			children = (
 				984BED1B1E4CCD1E007EDD96 /* IOBluetooth.framework */,
 				984BED161E4CC71B007EDD96 /* CoreBluetooth.framework */,
+				666068D8C3183C9184902FFC /* Pods_BLE.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		FC749E5D0A37E305D00FC5BE /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				AA02DCF0DB192CC4061F469C /* Pods-BLE.debug.xcconfig */,
+				AD3BD8125667F413C2045E55 /* Pods-BLE.release.xcconfig */,
+			);
+			name = Pods;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -85,9 +101,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9821C3E51E4C9FB40092762E /* Build configuration list for PBXNativeTarget "BLE" */;
 			buildPhases = (
+				A9D6A9814946736F43681D63 /* [CP] Check Pods Manifest.lock */,
 				9821C3D41E4C9FB40092762E /* Sources */,
 				9821C3D51E4C9FB40092762E /* Frameworks */,
 				9821C3D61E4C9FB40092762E /* Resources */,
+				FA9B0D1666F7EF541057C54D /* [CP] Embed Pods Frameworks */,
+				D34965EF3ABEFD265EDEC5DE /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -149,6 +168,54 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A9D6A9814946736F43681D63 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		D34965EF3ABEFD265EDEC5DE /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-BLE/Pods-BLE-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		FA9B0D1666F7EF541057C54D /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-BLE/Pods-BLE-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		9821C3D41E4C9FB40092762E /* Sources */ = {
@@ -267,6 +334,7 @@
 		};
 		9821C3E61E4C9FB40092762E /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA02DCF0DB192CC4061F469C /* Pods-BLE.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = BLE/BLE.entitlements;
@@ -282,6 +350,7 @@
 		};
 		9821C3E71E4C9FB40092762E /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AD3BD8125667F413C2045E55 /* Pods-BLE.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = BLE/BLE.entitlements;

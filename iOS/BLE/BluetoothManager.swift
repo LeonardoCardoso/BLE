@@ -7,176 +7,109 @@
 //
 
 import Foundation
-import CoreBluetooth
+import BluetoothKit
 
 class BluetoothManager: NSObject {
 
     // MARK: - Properties
     static let shared: BluetoothManager = BluetoothManager()
+
     let restoreIdentifier: String = "054656d3-bfe4-4b5c-afe7-8cce05f52be7"
     let serviceUUID: String = "0cdbe648-eed0-11e6-bc64-92361f002671"
-    let characteristicUUID: String = "199ab74c-eed0-11e6-bc64-92361f002671"
-    let localName = "Central - iOS"
-    var manager: CBCentralManager?
+    let characteristicUUID: String = "199ab74c-eed0-11e6-bc64-92361f002672"
+
+    let central = BKCentral()
 
     // MARK: - Initializers
     override init () {
 
         super.init()
 
-        self.manager = CBCentralManager(
-            delegate: self,
-            queue: nil,
-            options: [CBCentralManagerOptionRestoreIdentifierKey: self.restoreIdentifier]
-        )
+        self.central.delegate = self
+        self.central.addAvailabilityObserver(self)
 
-    }
+        do {
 
-    // MARK: - Functions
-    func scan() { }
+            guard
+                let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID?,
+                let characteristicUUID: UUID = NSUUID(uuidString: self.characteristicUUID) as UUID?
+                else { return }
 
-}
+            let configuration = BKConfiguration(dataServiceUUID: serviceUUID, dataServiceCharacteristicUUID: characteristicUUID)
 
-// MARK: - CBCentralManagerDelegate
-extension BluetoothManager: CBCentralManagerDelegate {
+            try self.central.startWithConfiguration(configuration)
+            print("startWithConfiguration")
+            // Once the availability observer has been positively notified, you're ready to discover and connect to peripherals.
 
-    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        } catch let error {
 
-        print("didConnect peripheral: \(peripheral.name)")
-
-
-    }
-
-    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-
-        print("didDisconnectPeripheral peripheral: \(peripheral.name)")
-
-    }
-
-    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-
-        print("didDiscover peripheral: \(peripheral.name)")
-        print("advertisementData: \(advertisementData)")
-
-        peripheral.delegate = self
-        self.manager?.connect(peripheral, options: [:])
-
-    }
-
-    func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
-
-        print("didFailToConnect peripheral: \(peripheral.name)")
-        print("error: \(error)")
-
-
-    }
-
-    func centralManager(_ central: CBCentralManager, willRestoreState dict: [String : Any]) {
-
-        print("willRestoreState")
-        print("dict: \(dict)")
-
-    }
-
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {
-
-        print("didUpdateState")
-
-        guard let serviceUUID: UUID = UUID(uuidString: serviceUUID) else { return }
-
-        if central.state == .poweredOn {
-
-            central.scanForPeripherals(withServices: [CBUUID(nsuuid: serviceUUID)], options: [:])
-
+            // Handle error.
+            print(error)
+            
         }
 
     }
 
+    // MARK: - Functions
+    func scan() {
+
+
+    }
 
 }
 
-// MARK: - CBPeripheralDelegate
-extension BluetoothManager: CBPeripheralDelegate {
+extension BluetoothManager: BKCentralDelegate {
 
-    func peripheralDidUpdateName(_ peripheral: CBPeripheral) {
+    func central(_ central: BKCentral, remotePeripheralDidDisconnect remotePeripheral: BKRemotePeripheral) {
 
-        print("didUpdateName: \(peripheral.name)")
-
-    }
-
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
-
-        print("didDiscoverServices: \(peripheral.name)")
-        print("error: \(error)")
+        print("remotePeripheralDidDisconnect remotePeripheral: \(remotePeripheral.name)")
 
     }
 
-    func peripheral(_ peripheral: CBPeripheral, didReadRSSI RSSI: NSNumber, error: Error?) {
+}
 
-        print("didReadRSSI RSSI: \(peripheral.name) \(RSSI)")
-        print("error: \(error)")
+extension BluetoothManager: BKAvailabilityObserver {
 
-    }
 
-    func peripheral(_ peripheral: CBPeripheral, didModifyServices invalidatedServices: [CBService]) {
+    func availabilityObserver(_ availabilityObservable: BKAvailabilityObservable, availabilityDidChange availability: BKAvailability) {
 
-        print("didModifyServices invalidatedServices: \(peripheral.name) \(invalidatedServices)")
+        print("availabilityDidChange availability: \(availability)")
+        if availability == .available {
 
-    }
+            self.central.scanWithDuration(3, progressHandler: { newDiscoveries in
 
-    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor descriptor: CBDescriptor, error: Error?) {
+                // Handle newDiscoveries, [BKDiscovery].
+                print(newDiscoveries)
 
-        print("didWriteValueFor descriptor: \(peripheral.name) \(descriptor)")
-        print("error: \(error)")
 
-    }
+            }, completionHandler: { result, error in
+                // Handle error.
+                // If no error, handle result, [BKDiscovery].
 
-    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor descriptor: CBDescriptor, error: Error?) {
+                print(result?.count, error)
 
-        print("didUpdateValueFor descriptor: \(peripheral.name) \(descriptor)")
-        print("error: \(error)")
+                if error == nil, let result: [BKDiscovery] = result, result.count > 0 {
 
-    }
+                    self.central.connect(remotePeripheral: result[0].remotePeripheral) { remotePeripheral, error in
 
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+                        // Handle error.
+                        // If no error, you're ready to receive data!
+                        print("\(remotePeripheral.name)")
+                        print("error: \(error)")
 
-        print("didDiscoverCharacteristicsFor service: \(peripheral.name) \(service)")
-        print("error: \(error)")
+                    }
 
-    }
+                }
 
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverIncludedServicesFor service: CBService, error: Error?) {
-
-        print("didDiscoverIncludedServicesFor service: \(peripheral.name) \(service)")
-        print("error: \(error)")
-
-    }
-
-    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
-
-        print("didWriteValueFor characteristic: \(peripheral.name) \(characteristic)")
-        print("error: \(error)")
-
-    }
-
-    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-
-        print("didUpdateValueFor characteristic: \(peripheral.name) \(characteristic)")
-        print("error: \(error)")
+            })
+            
+        }
         
     }
     
-    func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {
-
-        print("didDiscoverDescriptorsFor characteristic: \(peripheral.name) \(characteristic)")
-        print("error: \(error)")
+    func availabilityObserver(_ availabilityObservable: BKAvailabilityObservable, unavailabilityCauseDidChange unavailabilityCause: BKUnavailabilityCause) {
         
-    }
-    
-    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
-
-        print("didUpdateNotificationStateFor characteristic: \(peripheral.name) \(characteristic)")
-        print("error: \(error)")
+        print("unavailabilityCauseDidChange unavailabilityCause: \(unavailabilityCause)")
         
     }
     

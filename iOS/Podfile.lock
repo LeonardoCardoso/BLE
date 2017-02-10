@@ -1,0 +1,22 @@
+PODS:
+  - BluetoothKit (0.4.0)
+
+DEPENDENCIES:
+  - BluetoothKit (from `https://github.com/LeonardoCardoso/BluetoothKit`, branch `master`)
+
+EXTERNAL SOURCES:
+  BluetoothKit:
+    :branch: master
+    :git: https://github.com/LeonardoCardoso/BluetoothKit
+
+CHECKOUT OPTIONS:
+  BluetoothKit:
+    :commit: 128eb83e32a9b86566955bcf5926ed62a6ca0596
+    :git: https://github.com/LeonardoCardoso/BluetoothKit
+
+SPEC CHECKSUMS:
+  BluetoothKit: 0f14a99e68a48e29cf262d33860b21401838a230
+
+PODFILE CHECKSUM: 3bda8fdc3f2bf2bac3d7ed2f68a4b7acfce64537
+
+COCOAPODS: 1.2.0.beta.1
