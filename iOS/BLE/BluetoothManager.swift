@@ -13,25 +13,27 @@ class BluetoothManager: NSObject {
 
     // MARK: - Properties
     static let shared: BluetoothManager = BluetoothManager()
+    let restoreIdentifier: String = "054656d3-bfe4-4b5c-afe7-8cce05f52be7"
     let serviceUUID: String = "0cdbe648-eed0-11e6-bc64-92361f002671"
     let characteristicUUID: String = "199ab74c-eed0-11e6-bc64-92361f002671"
     let localName = "Central - iOS"
-    let manager: CBCentralManager = CBCentralManager()
+    var manager: CBCentralManager?
 
     // MARK: - Initializers
     override init () {
 
         super.init()
 
-        self.manager.delegate = self
+        self.manager = CBCentralManager(
+            delegate: self,
+            queue: nil,
+            options: [CBCentralManagerOptionRestoreIdentifierKey: self.restoreIdentifier]
+        )
 
     }
 
     // MARK: - Functions
-    func start() {
-
-
-    }
+    func scan() { }
 
 }
 
@@ -57,7 +59,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
         print("advertisementData: \(advertisementData)")
 
         peripheral.delegate = self
-        self.manager.connect(peripheral, options: [:])
+        self.manager?.connect(peripheral, options: [:])
 
     }
 

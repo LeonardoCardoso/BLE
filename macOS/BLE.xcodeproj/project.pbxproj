@@ -21,6 +21,9 @@
 		9821C3E01E4C9FB40092762E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		9821C3E21E4C9FB40092762E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9821C3E81E4CA1450092762E /* ViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		984BED141E4CC6FF007EDD96 /* BLE.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BLE.entitlements; sourceTree = "<group>"; };
+		984BED161E4CC71B007EDD96 /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
+		984BED1B1E4CCD1E007EDD96 /* IOBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOBluetooth.framework; path = System/Library/Frameworks/IOBluetooth.framework; sourceTree = SDKROOT; };
 		98701B131E4CAE32005E14F5 /* BluetoothManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -40,6 +43,7 @@
 			children = (
 				9821C3DA1E4C9FB40092762E /* BLE */,
 				9821C3D91E4C9FB40092762E /* Products */,
+				984BED151E4CC71B007EDD96 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -54,6 +58,7 @@
 		9821C3DA1E4C9FB40092762E /* BLE */ = {
 			isa = PBXGroup;
 			children = (
+				984BED141E4CC6FF007EDD96 /* BLE.entitlements */,
 				9821C3DB1E4C9FB40092762E /* AppDelegate.swift */,
 				9821C3DD1E4C9FB40092762E /* Assets.xcassets */,
 				9821C3DF1E4C9FB40092762E /* MainMenu.xib */,
@@ -62,6 +67,15 @@
 				98701B131E4CAE32005E14F5 /* BluetoothManager.swift */,
 			);
 			path = BLE;
+			sourceTree = "<group>";
+		};
+		984BED151E4CC71B007EDD96 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				984BED1B1E4CCD1E007EDD96 /* IOBluetooth.framework */,
+				984BED161E4CC71B007EDD96 /* CoreBluetooth.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -98,6 +112,11 @@
 						CreatedOnToolsVersion = 8.2.1;
 						DevelopmentTeam = C8BNB3TERH;
 						ProvisioningStyle = Automatic;
+						SystemCapabilities = {
+							com.apple.Sandbox = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -250,6 +269,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = BLE/BLE.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = C8BNB3TERH;
 				INFOPLIST_FILE = BLE/Info.plist;
@@ -264,6 +284,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = BLE/BLE.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				DEVELOPMENT_TEAM = C8BNB3TERH;
 				INFOPLIST_FILE = BLE/Info.plist;

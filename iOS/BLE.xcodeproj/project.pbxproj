@@ -17,6 +17,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		984BED191E4CC735007EDD96 /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
 		9856618B1E4A2EB30070CAF1 /* Flow.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Flow.swift; sourceTree = "<group>"; };
 		98701B111E4CAE0F005E14F5 /* BluetoothManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BluetoothManager.swift; sourceTree = "<group>"; };
 		98F6593D1E4A257900A63CB1 /* BLE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BLE.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -39,11 +40,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		984BED181E4CC735007EDD96 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				984BED191E4CC735007EDD96 /* CoreBluetooth.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		98F659341E4A257900A63CB1 = {
 			isa = PBXGroup;
 			children = (
 				98F6593F1E4A257900A63CB1 /* BLE */,
 				98F6593E1E4A257900A63CB1 /* Products */,
+				984BED181E4CC735007EDD96 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};

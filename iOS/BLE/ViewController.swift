@@ -22,7 +22,7 @@ class ViewController: UIViewController {
     
     @IBAction func scan(_ sender: Any) {
 
-        BluetoothManager.shared.start()
+        BluetoothManager.shared.scan()
 
     }
 

@@ -26,7 +26,7 @@ class ViewController: NSViewController {
     
     @IBAction func discover(_ sender: Any) {
 
-        BluetoothManager.shared.start()
+        BluetoothManager.shared.discover()
 
     }
 
