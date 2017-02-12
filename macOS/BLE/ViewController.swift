@@ -36,6 +36,7 @@ extension ViewController: BluetoothMessaging {
     func didStartConfiguration() {
 
         self.label.stringValue = "\(Date()) Start configuration"
+        print(self.label.stringValue)
 
     }
 
@@ -44,6 +45,7 @@ extension ViewController: BluetoothMessaging {
 
         guard let name: String = name else { return }
         self.label.stringValue = "\(Date()) Did connect to: \(name)"
+        print(self.label.stringValue)
 
     }
 
@@ -52,6 +54,7 @@ extension ViewController: BluetoothMessaging {
 
         guard let name: String = name else { return }
         self.label.stringValue = "\(Date()) Did disconnect to: \(name)"
+        print(self.label.stringValue)
 
     }
 
@@ -66,19 +69,21 @@ extension ViewController: BluetoothMessaging {
     func didFailToSendData() {
 
         self.label.stringValue = "\(Date()) Did fail to data"
+        print(self.label.stringValue)
         
     }
 
     func didReceiveData(data: [String: Any]?) {
 
-        self.label.stringValue = "\(Date()) Did retrieve data"
-        print("Did retrieve data: ", data ?? [:])
+        self.label.stringValue = "\(Date()) Did received data"
+        print("Did received data: ", data ?? [:])
 
     }
 
     func didConnectionFailed() {
 
         self.label.stringValue = "\(Date()) Connection failed"
+        print(self.label.stringValue)
 
     }
 
@@ -86,6 +91,7 @@ extension ViewController: BluetoothMessaging {
 
         guard let name: String = name else { return }
         self.label.stringValue = "\(Date()) Peripheral disconnected: \(name)"
+        print(self.label.stringValue)
 
     }
 

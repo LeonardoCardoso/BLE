@@ -30,11 +30,11 @@ protocol BluetoothMessaging {
 class BluetoothManager: NSObject {
 
     // MARK: - Properties
-    let restoreIdentifier: String = "054656d3-bfe4-4b5c-afe7-8cce05f52be7"
+    let centralId: String = "62443cc7-15bc-4136-bf5d-0ad80c459216"
     let serviceUUID: String = "0cdbe648-eed0-11e6-bc64-92361f002671"
     let characteristicUUID: String = "199ab74c-eed0-11e6-bc64-92361f002672"
 
-    let central = BKCentral()
+    let central: BKCentral = BKCentral()
 
     var bluetoothMessaging: BluetoothMessaging?
 
@@ -77,15 +77,15 @@ class BluetoothManager: NSObject {
 
     }
 
-    func sendData(_ remotePeripheral: BKRemotePeripheral) {
+    func sendData(_ remotePeer: BKRemotePeer) {
 
         let info: [String: String] = [
-            "centralId": self.restoreIdentifier
+            "centralId": self.centralId
         ]
 
         let data: Data = NSKeyedArchiver.archivedData(withRootObject: info)
 
-        self.central.sendData(data, toRemotePeer: remotePeripheral) { data, remoteCentral, error in
+        self.central.sendData(data, toRemotePeer: remotePeer) { data, remoteCentral, error in
 
             if error != nil {
 
@@ -95,14 +95,39 @@ class BluetoothManager: NSObject {
             } else {
 
                 self.bluetoothMessaging?.didSendData(data: info)
-                
+
             }
-            
+
         }
 
 
     }
 
+}
+
+// MARK: - BKRemotePeripheralDelegate
+extension BluetoothManager: BKRemotePeripheralDelegate {
+
+    func remotePeripheral(_ remotePeripheral: BKRemotePeripheral, didUpdateName name: String) { }
+
+    func remotePeripheralIsReady(_ remotePeripheral: BKRemotePeripheral) {
+
+        print("Remote Peripheral is ready for receiving data: ", remotePeripheral.name ?? "")
+        self.sendData(remotePeripheral)
+
+    }
+
+}
+
+// MARK: - BKRemotePeerDelegate
+extension BluetoothManager: BKRemotePeerDelegate {
+
+    func remotePeer(_ remotePeer: BKRemotePeer, didSendArbitraryData data: Data) {
+
+        self.bluetoothMessaging?.didReceiveData(data: NSKeyedUnarchiver.unarchiveObject(with: data) as? [String : Any])
+        
+    }
+    
 }
 
 // MARK: - BKCentralDelegate
@@ -125,41 +150,80 @@ extension BluetoothManager: BKAvailabilityObserver {
         print("Availability: \(availability)")
         if availability == .available {
 
+//            self.central.scanContinuouslyWithChangeHandler({ changes, discoveries in
+//
+//                for result: BKDiscovery in discoveries {
+//
+//                    if result.remotePeripheral.state == .disconnected {
+//
+//                        result.remotePeripheral.delegate = self
+//                        result.remotePeripheral.peripheralDelegate = self
+//
+//                        self.central.connect(10.0, remotePeripheral: result.remotePeripheral) { remotePeripheral, error in
+//
+//                            if error == nil {
+//
+//                                print("Handshake: you're ready to receive data")
+//                                self.bluetoothMessaging?.didConnectPeripheral(name: remotePeripheral.name)
+//
+//                            } else {
+//
+//                                print("error: \(error)")
+//
+//                            }
+//
+//                        }
+//
+//                    }
+//                    
+//                }
+//                
+//            }, stateHandler: { _ in }, duration: 10, inBetweenDelay: 5, errorHandler: { error in
+//                
+//                print("\(error)")
+//                self.bluetoothMessaging?.didConnectionFailed()
+//                
+//            })
+
             self.central
                 .scanWithDuration(
-                    3,
-                    progressHandler: { newDiscoveries in print(newDiscoveries.count) }, completionHandler: { result, error in
+                    3.0,
+                    progressHandler: { newDiscoveries in print(newDiscoveries.count) },
+                    completionHandler: { result, error in
 
                         if error == nil, let result: [BKDiscovery] = result, result.count > 0 {
 
                             for result: BKDiscovery in result {
 
-                                self.central.connect(10.0, remotePeripheral: result.remotePeripheral) { remotePeripheral, error in
+                                if result.remotePeripheral.state == .disconnected {
 
-                                    if error == nil {
+                                    result.remotePeripheral.delegate = self
+                                    result.remotePeripheral.peripheralDelegate = self
 
-                                        print("Handshake: you're ready to receive data")
-                                        self.bluetoothMessaging?.didConnectPeripheral(name: remotePeripheral.name)
+                                    self.central.connect(10.0, remotePeripheral: result.remotePeripheral) { remotePeripheral, error in
 
-                                        self.sendData(remotePeripheral)
+                                        if error == nil {
 
-                                    } else {
+                                            print("Handshake: you're ready to receive data")
+                                            self.bluetoothMessaging?.didConnectPeripheral(name: remotePeripheral.name)
 
-                                        print("error: \(error)")
+                                        } else {
+                                            
+                                            print("error: \(error)")
+                                            
+                                        }
                                         
                                     }
                                     
                                 }
-
-
-
+                                
                             }
-
+                            
                         } else if error != nil {
-
+                            
                             print("\(error)")
                             self.bluetoothMessaging?.didConnectionFailed()
-
+                            
                         }
                         
                 })
@@ -173,5 +237,5 @@ extension BluetoothManager: BKAvailabilityObserver {
         print("unavailabilityCauseDidChange unavailabilityCause: \(unavailabilityCause)")
         
     }
-    
+
 }
