@@ -33,10 +33,16 @@ class BluetoothManager: NSObject {
     let centralId: String = "62443cc7-15bc-4136-bf5d-0ad80c459216"
     let serviceUUID: String = "0cdbe648-eed0-11e6-bc64-92361f002671"
     let characteristicUUID: String = "199ab74c-eed0-11e6-bc64-92361f002672"
+    let peripheralLocalName: String = "Peripheral - iOS"
+
+    var serviceCBUUID: CBUUID?
+    var characteristicCBUUID: CBUUID?
 
     var bluetoothMessaging: BluetoothMessaging?
 
     var centralManager: CBCentralManager?
+
+    var discoveredPeripheral: CBPeripheral?
 
     // MARK: - Initializers
     convenience init (delegate: BluetoothMessaging) {
@@ -44,6 +50,14 @@ class BluetoothManager: NSObject {
         self.init()
 
         self.bluetoothMessaging = delegate
+
+        guard
+            let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID?,
+            let characteristicUUID: UUID = NSUUID(uuidString: self.characteristicUUID) as UUID?
+            else { return }
+
+        self.serviceCBUUID = CBUUID(nsuuid: serviceUUID)
+        self.characteristicCBUUID = CBUUID(nsuuid: characteristicUUID)
 
     }
 
@@ -65,9 +79,9 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
         if central.state == .poweredOn {
 
-            guard let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID? else { return }
+            guard let serviceCBUUID: CBUUID = self.serviceCBUUID else { return }
 
-            self.centralManager?.scanForPeripherals(withServices: [CBUUID(nsuuid: serviceUUID)], options: nil)
+            self.centralManager?.scanForPeripherals(withServices: [serviceCBUUID], options: nil)
 
         }
 
@@ -77,9 +91,9 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
         print("didConnect")
 
-        guard let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID? else { return }
+        guard let serviceCBUUID: CBUUID = self.serviceCBUUID else { return }
 
-        peripheral.discoverServices([CBUUID(nsuuid: serviceUUID)])
+        self.discoveredPeripheral?.discoverServices([serviceCBUUID])
 
 
     }
@@ -120,12 +134,25 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
 
-        print("didDiscover: \(peripheral.name)")
+        guard let name: String = peripheral.name else { return }
 
-        peripheral.delegate = self
+        if name == self.peripheralLocalName {
 
-        self.centralManager?.stopScan()
-        self.centralManager?.connect(peripheral, options: nil)
+            // Once we found it, we stop scanning.
+//            self.centralManager?.stopScan()
+
+            // We must keep a reference to the new discovered peripheral, which means we must retain it. http://stackoverflow.com/a/20711503/1255990
+            self.discoveredPeripheral = peripheral
+
+            print("didDiscover:", self.discoveredPeripheral?.name ?? "")
+
+            self.discoveredPeripheral?.delegate = self
+
+            guard let discoveredPeripheral: CBPeripheral = self.discoveredPeripheral else { return }
+
+            self.centralManager?.connect(discoveredPeripheral, options: nil)
+
+        }
 
     }
 
@@ -152,18 +179,15 @@ extension BluetoothManager: CBPeripheralDelegate {
         print("didDiscoverServices")
 
         guard
-            let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID?,
-            let characteristicUUID: UUID = NSUUID(uuidString: self.characteristicUUID) as UUID?,
-            let services: [CBService] = peripheral.services
+            let characteristicCBUUID: CBUUID = self.characteristicCBUUID,
+            let services: [CBService] = self.discoveredPeripheral?.services
             else { return }
-
-        let serviceCBUUID: CBUUID = CBUUID(nsuuid: serviceUUID)
 
         for service: CBService in services {
 
-            if service.uuid == serviceCBUUID {
+            if service.uuid == self.serviceCBUUID {
 
-                peripheral.discoverCharacteristics([CBUUID(nsuuid: characteristicUUID)], for: service)
+                self.discoveredPeripheral?.discoverCharacteristics([characteristicCBUUID], for: service)
 
             }
 
@@ -181,27 +205,22 @@ extension BluetoothManager: CBPeripheralDelegate {
 
         print("didDiscoverCharacteristicsFor")
 
-        guard
-            let characteristicUUID: UUID = NSUUID(uuidString: self.characteristicUUID) as UUID?,
-            let characteristics: [CBCharacteristic] = service.characteristics
-            else { return }
-
-        let characteristicCBUUID: CBUUID = CBUUID(nsuuid: characteristicUUID)
+        guard let characteristics: [CBCharacteristic] = service.characteristics else { return }
 
         for characteristic: CBCharacteristic in characteristics {
 
-            if characteristic.uuid == characteristicCBUUID {
+            if characteristic.uuid == self.characteristicCBUUID {
 
                 print("Reading Data")
 
                 // For static values
-                peripheral.readValue(for: characteristic)
+                self.discoveredPeripheral?.readValue(for: characteristic)
 
                 // For dynamic values
-                peripheral.setNotifyValue(true, for: characteristic)
-                
+                self.discoveredPeripheral?.setNotifyValue(true, for: characteristic)
+
             }
-            
+
         }
 
 
@@ -222,26 +241,26 @@ extension BluetoothManager: CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverIncludedServicesFor service: CBService, error: Error?) {
 
         print("didDiscoverIncludedServicesFor")
-        
+
     }
-    
+
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
-        
+
         print("didWriteValueFor")
-        
+
     }
-    
+
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         
         print("didUpdateValueFor")
-
+        
         print("Data: \(characteristic.value)")
-
+        
         print("Write on peripheral.")
         let dict: [String: String] = ["Yo": "Lo"]
         let data: Data = NSKeyedArchiver.archivedData(withRootObject: dict)
-        peripheral.writeValue(data, for: characteristic, type: .withResponse)
-
+        self.discoveredPeripheral?.writeValue(data, for: characteristic, type: .withResponse)
+        
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {

@@ -33,6 +33,9 @@ class BluetoothManager: NSObject {
     var bluetoothMessaging: BluetoothMessaging?
     var peripheralManager: CBPeripheralManager?
 
+    var serviceCBUUID: CBUUID?
+    var characteristicCBUUID: CBUUID?
+
     var service: CBMutableService?
 
     let properties: CBCharacteristicProperties = [.read, .notify, .writeWithoutResponse, .write]
@@ -52,9 +55,17 @@ class BluetoothManager: NSObject {
             let characteristicUUID: UUID = NSUUID(uuidString: self.characteristicUUID) as UUID?
             else { return }
 
-        self.service = CBMutableService(type: CBUUID(nsuuid: serviceUUID), primary: true)
+        self.serviceCBUUID = CBUUID(nsuuid: serviceUUID)
+        self.characteristicCBUUID = CBUUID(nsuuid: characteristicUUID)
 
-        self.characterisctic = CBMutableCharacteristic(type: CBUUID(nsuuid: characteristicUUID), properties: properties, value: nil, permissions: permissions)
+        guard
+            let serviceCBUUID: CBUUID = self.serviceCBUUID,
+            let characteristicCBUUID: CBUUID = self.characteristicCBUUID
+            else { return }
+
+        self.service = CBMutableService(type: serviceCBUUID, primary: true)
+
+        self.characterisctic = CBMutableCharacteristic(type: characteristicCBUUID, properties: self.properties, value: nil, permissions: self.permissions)
 
         self.peripheralManager = CBPeripheralManager(delegate: self, queue: nil, options: [CBCentralManagerOptionRestoreIdentifierKey: self.peripheralId])
 
@@ -77,7 +88,8 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
             guard let service: CBMutableService = self.service else { return }
 
-            peripheral.add(service)
+            self.peripheralManager?.removeAllServices()
+            self.peripheralManager?.add(service)
 
         }
 
@@ -86,12 +98,6 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
     func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
 
         print("peripheralManagerIsReady")
-
-        let data: [String: Any] = [
-            CBAdvertisementDataServiceUUIDsKey: [self.service?.uuid],
-            CBAdvertisementDataLocalNameKey: "Peripheral - iOS"
-        ]
-        peripheral.startAdvertising(data)
 
     }
 
@@ -138,15 +144,20 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
         print("didAdd service")
 
+        let advertisingData: [String: Any] = [
+            CBAdvertisementDataServiceUUIDsKey: [self.service?.uuid],
+            CBAdvertisementDataLocalNameKey: "Peripheral - iOS"
+        ]
+        self.peripheralManager?.stopAdvertising()
+        self.peripheralManager?.startAdvertising(advertisingData)
+
     }
 
     func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveWrite requests: [CBATTRequest]) {
 
         print("didReceiveWrite requests")
 
-        guard let uuid: CBUUID = self.characterisctic?.uuid else { return }
-
-        let characteristicCBUUID: CBUUID = uuid
+        guard let characteristicCBUUID: CBUUID = self.characteristicCBUUID else { return }
 
         for request: CBATTRequest in requests {
 
@@ -169,15 +180,16 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
     }
 
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
-        
+
         print("didSubscribeTo characteristic")
 
         guard let characterisctic: CBMutableCharacteristic = self.characterisctic else { return }
         
         let dict: [String: String] = ["Hello": "Darkness"]
         let data: Data = NSKeyedArchiver.archivedData(withRootObject: dict)
+        
         self.peripheralManager?.updateValue(data, for: characterisctic, onSubscribedCentrals: [central])
-
+        
     }
     
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
