@@ -12,54 +12,33 @@ class ViewController: UIViewController {
 
     // MARK: - IBOutlet
     @IBOutlet var label: UILabel!
-    @IBOutlet var button: UIButton!
 
     // MARK: - Lifecyle
     override var preferredStatusBarStyle: UIStatusBarStyle { return .lightContent }
 
     // MARK: - Properties
-    var bluetoothManager: BluetoothManager?
+    var manager: BluetoothManager?
 
     override func viewDidAppear(_ animated: Bool) {
 
         super.viewDidAppear(animated)
 
-        self.bluetoothManager = BluetoothManager(delegate: self)
+        self.manager = BluetoothManager(delegate: self)
 
     }
 
 }
 
-// MARK: - BluetoothMessaging
-extension ViewController: BluetoothMessaging {
+// MARK: - BlueEar
+extension ViewController: BlueEar {
 
-    func didStartConfiguration() {
+    func didStartConfiguration() { self.label.text = "Start configuration 🎛" }
 
-        self.label.text = "\(Date()) Start configuration"
-        print(self.label.text ?? "")
+    func didStartAdvertising() { self.label.text = "Start advertising 📻" }
 
-    }
+    func didSendData() { self.label.text = "Did send data ⬆️" }
 
-    func didStartAdvertising() {
-
-        self.label.text = "\(Date()) Start advertising"
-        print(self.label.text ?? "")
-
-    }
-
-    func didSendData(data: [String: Any]?) {
-
-        self.label.text = "\(Date()) Did send data"
-        print("Did send data: ", data ?? [:])
-
-    }
-
-    func didReceiveData(data: [String: Any]?) {
-
-        self.label.text = "\(Date()) Did received data"
-        print("Did received data: ", data ?? [:])
-
-    }
-
+    func didReceiveData() { self.label.text = "Did received data ⬇️" }
+    
 }
 

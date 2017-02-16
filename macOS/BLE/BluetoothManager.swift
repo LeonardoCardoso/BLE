@@ -10,7 +10,7 @@ import Foundation
 import CoreBluetooth
 import Cocoa
 
-protocol BluetoothMessaging {
+protocol BlueEar {
 
     func didStartConfiguration()
 
@@ -19,8 +19,8 @@ protocol BluetoothMessaging {
     func didConnectPeripheral(name: String?)
     func didDisconnectPeripheral(name: String?)
 
-    func didSendData(data: [String: Any]?)
-    func didReceiveData(data: [String: Any]?)
+    func didSendData()
+    func didReceiveData()
 
     func didFailConnection()
 
@@ -37,18 +37,18 @@ class BluetoothManager: NSObject {
     var serviceCBUUID: CBUUID?
     var characteristicCBUUID: CBUUID?
 
-    var bluetoothMessaging: BluetoothMessaging?
+    var blueEar: BlueEar?
 
     var centralManager: CBCentralManager?
 
     var discoveredPeripheral: CBPeripheral?
 
     // MARK: - Initializers
-    convenience init (delegate: BluetoothMessaging) {
+    convenience init (delegate: BlueEar) {
 
         self.init()
 
-        self.bluetoothMessaging = delegate
+        self.blueEar = delegate
 
         guard
             let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID?,
@@ -64,7 +64,7 @@ class BluetoothManager: NSObject {
     func scan() {
 
         self.centralManager = CBCentralManager(delegate: self, queue: nil, options: nil)
-        self.bluetoothMessaging?.didStartConfiguration()
+        self.blueEar?.didStartConfiguration()
 
     }
 
@@ -81,18 +81,38 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
             guard let serviceCBUUID: CBUUID = self.serviceCBUUID else { return }
 
-            self.bluetoothMessaging?.didStartScanningPeripherals()
+            self.blueEar?.didStartScanningPeripherals()
             self.centralManager?.scanForPeripherals(withServices: [serviceCBUUID], options: nil)
 
         }
 
     }
 
+    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+
+        guard let name: String = peripheral.name else { return }
+
+        if name == self.peripheralLocalName {
+
+            // We must keep a reference to the new discovered peripheral, which means we must retain it. http://stackoverflow.com/a/20711503/1255990
+            self.discoveredPeripheral = peripheral
+
+            print("\ndidDiscover:", self.discoveredPeripheral?.name ?? "")
+
+            self.discoveredPeripheral?.delegate = self
+
+            guard let discoveredPeripheral: CBPeripheral = self.discoveredPeripheral else { return }
+            self.centralManager?.connect(discoveredPeripheral, options: nil)
+            
+        }
+        
+    }
+
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
 
-        print("\ndidConnect")
+        print("\ndidConnect", self.discoveredPeripheral?.name ?? "")
 
-        self.bluetoothMessaging?.didConnectPeripheral(name: peripheral.name ?? "")
+        self.blueEar?.didConnectPeripheral(name: peripheral.name ?? "")
 
         guard let serviceCBUUID: CBUUID = self.serviceCBUUID else { return }
 
@@ -119,8 +139,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
         print("\ndidFailToConnect")
 
-        self.bluetoothMessaging?.didFailConnection()
-
+        self.blueEar?.didFailConnection()
 
     }
 
@@ -133,28 +152,8 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
 
-        print("\ndidDisconnectPeripheral")
-        self.bluetoothMessaging?.didDisconnectPeripheral(name: peripheral.name ?? "")
-
-    }
-
-    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-
-        guard let name: String = peripheral.name else { return }
-
-        if name == self.peripheralLocalName {
-
-            // We must keep a reference to the new discovered peripheral, which means we must retain it. http://stackoverflow.com/a/20711503/1255990
-            self.discoveredPeripheral = peripheral
-
-            print("\ndidDiscover:", self.discoveredPeripheral?.name ?? "")
-
-            self.discoveredPeripheral?.delegate = self
-
-            guard let discoveredPeripheral: CBPeripheral = self.discoveredPeripheral else { return }
-            self.centralManager?.connect(discoveredPeripheral, options: nil)
-
-        }
+        print("\ndidDisconnectPeripheral", self.discoveredPeripheral?.name ?? "")
+        self.blueEar?.didDisconnectPeripheral(name: peripheral.name ?? "")
 
     }
 
@@ -162,19 +161,6 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
 // MARK: - CBPeripheralDelegate
 extension BluetoothManager: CBPeripheralDelegate {
-
-
-    func peripheralDidUpdateName(_ peripheral: CBPeripheral) {
-
-        print("peripheralDidUpdateName")
-
-    }
-
-    func peripheralDidUpdateRSSI(_ peripheral: CBPeripheral, error: Error?) {
-
-        print("peripheralDidUpdateRSSI")
-
-    }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
 
@@ -192,14 +178,20 @@ extension BluetoothManager: CBPeripheralDelegate {
                 self.discoveredPeripheral?.discoverCharacteristics([characteristicCBUUID], for: service)
 
             }
-
+            
         }
-
+        
     }
 
-    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor descriptor: CBDescriptor, error: Error?) {
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
 
         print("\ndidWriteValueFor")
+
+        // After we write data on peripheral, we disconnect it.
+        self.centralManager?.cancelPeripheralConnection(peripheral)
+
+        // We stop scanning.
+        self.centralManager?.stopScan()
 
     }
 
@@ -220,11 +212,68 @@ extension BluetoothManager: CBPeripheralDelegate {
 
                 // To read static values
                 // self.discoveredPeripheral?.readValue(for: characteristic)
+                
+            }
+            
+        }
+        
+        
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+
+        print("\ndidUpdateValueFor")
+
+        if let value: Data = characteristic.value {
+
+            do {
+
+                let receivedData: [String: String] = try PropertyListSerialization.propertyList(from: value, options: [], format: nil) as! [String: String]
+
+                print("Value read is: \(receivedData)")
+                self.blueEar?.didReceiveData()
+
+            } catch let error {
+
+                print(error)
 
             }
 
         }
 
+        do {
+
+            print("\nWriting on peripheral.")
+
+            let dict: [String: String] = ["Yo": "Lo"]
+            let data: Data = try PropertyListSerialization.data(fromPropertyList: dict, format: .binary, options: 0)
+
+            self.discoveredPeripheral?.writeValue(data, for: characteristic, type: .withResponse)
+            self.blueEar?.didSendData()
+            
+        } catch let error {
+            
+            print(error)
+            
+        }
+        
+    }
+
+    func peripheralDidUpdateName(_ peripheral: CBPeripheral) {
+
+        print("\nperipheralDidUpdateName")
+
+    }
+
+    func peripheralDidUpdateRSSI(_ peripheral: CBPeripheral, error: Error?) {
+
+        print("\nperipheralDidUpdateRSSI")
+
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor descriptor: CBDescriptor, error: Error?) {
+
+        print("\ndidWriteValueFor")
 
     }
 
@@ -244,59 +293,6 @@ extension BluetoothManager: CBPeripheralDelegate {
 
         print("\ndidDiscoverIncludedServicesFor")
 
-    }
-
-    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
-
-        print("\ndidWriteValueFor")
-
-    }
-
-    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-
-        print("\ndidUpdateValueFor")
-
-        if let value: Data = characteristic.value {
-
-            do {
-
-                let receivedData: [String: String] = try PropertyListSerialization.propertyList(from: value, options: [], format: nil) as! [String: String]
-
-                print("Value read is: \(receivedData)")
-                self.bluetoothMessaging?.didReceiveData(data: receivedData)
-
-            } catch let error {
-
-                print(error)
-
-            }
-
-        }
-
-        do {
-
-            print("Write on peripheral.")
-
-            let dict: [String: String] = ["Yo": "Lo"]
-            let data: Data = try PropertyListSerialization.data(fromPropertyList: dict, format: .binary, options: 0)
-
-            self.discoveredPeripheral?.writeValue(data, for: characteristic, type: .withResponse)
-            self.bluetoothMessaging?.didSendData(data: dict)
-            
-        } catch let error {
-            
-            print(error)
-            
-        }
-        
-        
-        //         After we write data on peripheral, we can disconnect it like this
-        //        guard let discoveredPeripheral: CBPeripheral = self.discoveredPeripheral else { return }
-        //        self.centralManager?.cancelPeripheralConnection(discoveredPeripheral)
-        
-        // We stop scanning.
-        //        self.centralManager?.stopScan()
-        
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {

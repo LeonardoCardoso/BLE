@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import CoreBluetooth
 import Cocoa
 
 class ViewController: NSViewController {
@@ -17,76 +16,34 @@ class ViewController: NSViewController {
     @IBOutlet weak var button: NSButton!
 
     // MARK: - Properties
-    var bluetoothManager: BluetoothManager?
+    var manager: BluetoothManager?
 
     // MARK: - Lifecyle
     @IBAction func discover(_ sender: Any) {
 
-        self.bluetoothManager = BluetoothManager(delegate: self)
-        self.bluetoothManager?.scan()
+        self.manager = BluetoothManager(delegate: self)
+        self.manager?.scan()
 
     }
 
 }
 
-// MARK: - BluetoothMessaging
-extension ViewController: BluetoothMessaging {
+// MARK: - BlueEar
+extension ViewController: BlueEar {
 
+    func didStartConfiguration() { self.label.stringValue = "Start configuration 🎛" }
 
-    func didStartConfiguration() {
+    func didStartScanningPeripherals() { self.label.stringValue = "Start scanning peripherals 👀" }
 
-        self.label.stringValue = "\(Date()) Start configuration"
-        print(self.label.stringValue)
+    func didConnectPeripheral(name: String?) { self.label.stringValue = "Did connect to: \(name ?? "") 🤜🏽🤛🏽" }
 
-    }
+    func didDisconnectPeripheral(name: String?) { self.label.stringValue = "Did disconnect: \(name ?? "") 🤜🏽🤚🏽" }
 
-    func didStartScanningPeripherals() {
+    func didSendData() { self.label.stringValue = "Did send data ⬆️" }
 
-        self.label.stringValue = "\(Date()) Start scanning peripherals"
-        print(self.label.stringValue)
-        
-        
-    }
+    func didReceiveData() { self.label.stringValue = "Did received data ⬇️" }
 
-    func didConnectPeripheral(name: String?) {
-
-        guard let name: String = name else { return }
-        self.label.stringValue = "\(Date()) Did connect to: \(name)"
-        print(self.label.stringValue)
-
-    }
-
-
-    func didDisconnectPeripheral(name: String?) {
-
-        guard let name: String = name else { return }
-        self.label.stringValue = "\(Date()) Did disconnect: \(name)"
-        print(self.label.stringValue)
-
-    }
-
-
-    func didSendData(data: [String: Any]?) {
-
-        self.label.stringValue = "\(Date()) Did send data"
-        print("Did send data: ", data ?? [:])
-
-    }
-
-    func didReceiveData(data: [String: Any]?) {
-
-        self.label.stringValue = "\(Date()) Did received data"
-        print("Did received data: ", data ?? [:])
-
-    }
-
-    func didFailConnection() {
-
-        self.label.stringValue = "\(Date()) Connection failed"
-        print(self.label.stringValue)
-
-    }
-
+    func didFailConnection() { self.label.stringValue = "Connection failed 🤷🏽‍♂️" }
     
 }
 

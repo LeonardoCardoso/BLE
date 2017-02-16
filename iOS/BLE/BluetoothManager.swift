@@ -9,14 +9,14 @@
 import Foundation
 import CoreBluetooth
 
-protocol BluetoothMessaging {
+protocol BlueEar {
 
     func didStartConfiguration()
 
     func didStartAdvertising()
 
-    func didSendData(data: [String: Any]?)
-    func didReceiveData(data: [String: Any]?)
+    func didSendData()
+    func didReceiveData()
 
 }
 
@@ -28,7 +28,10 @@ class BluetoothManager: NSObject {
     let characteristicUUID: String = "199ab74c-eed0-11E6-BC64-92361F002672"
     let localName: String = "Peripheral - iOS"
 
-    var bluetoothMessaging: BluetoothMessaging?
+    let properties: CBCharacteristicProperties = [.read, .notify, .writeWithoutResponse, .write]
+    let permissions: CBAttributePermissions = [.readable, .writeable]
+
+    var bluetoothMessaging: BlueEar?
     var peripheralManager: CBPeripheralManager?
 
     var serviceCBUUID: CBUUID?
@@ -36,13 +39,10 @@ class BluetoothManager: NSObject {
 
     var service: CBMutableService?
 
-    let properties: CBCharacteristicProperties = [.read, .notify, .writeWithoutResponse, .write]
-    let permissions: CBAttributePermissions = [.readable, .writeable]
-
     var characterisctic: CBMutableCharacteristic?
 
     // MARK: - Initializers
-    convenience init (delegate: BluetoothMessaging?) {
+    convenience init (delegate: BlueEar?) {
 
         self.init()
 
@@ -95,17 +95,48 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
     }
 
-    func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
+    func peripheralManager(_ peripheral: CBPeripheralManager, didAdd service: CBService, error: Error?) {
 
-        print("peripheralManagerIsReady")
+        print("\ndidAdd service")
 
+        let advertisingData: [String: Any] = [
+            CBAdvertisementDataServiceUUIDsKey: [self.service?.uuid],
+            CBAdvertisementDataLocalNameKey: "Peripheral - iOS"
+        ]
+        self.peripheralManager?.stopAdvertising()
+        self.peripheralManager?.startAdvertising(advertisingData)
+        
     }
 
     func peripheralManagerDidStartAdvertising(_ peripheral: CBPeripheralManager, error: Error?) {
 
         print("peripheralManagerDidStartAdvertising")
         self.bluetoothMessaging?.didStartAdvertising()
+        
+    }
 
+    // Listen to dynamic values
+    // Called when CBPeripheral .setNotifyValue(true, for: characteristic) is called
+    func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
+
+        print("\ndidSubscribeTo characteristic")
+
+        guard let characterisctic: CBMutableCharacteristic = self.characterisctic else { return }
+
+        do {
+
+            let dict: [String: String] = ["Hello": "Darkness"]
+            let data: Data = try PropertyListSerialization.data(fromPropertyList: dict, format: .binary, options: 0)
+
+            self.peripheralManager?.updateValue(data, for: characterisctic, onSubscribedCentrals: [central])
+            self.bluetoothMessaging?.didSendData()
+
+        } catch let error {
+
+            print(error)
+
+        }
+        
     }
 
     // Read static values
@@ -119,27 +150,6 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
             print("Matching characteristic for reading")
 
         }
-
-
-    }
-
-    func peripheralManager(_ peripheral: CBPeripheralManager, willRestoreState dict: [String : Any]) {
-
-        print("willRestoreState")
-
-
-    }
-
-    func peripheralManager(_ peripheral: CBPeripheralManager, didAdd service: CBService, error: Error?) {
-
-        print("\ndidAdd service")
-
-        let advertisingData: [String: Any] = [
-            CBAdvertisementDataServiceUUIDsKey: [self.service?.uuid],
-            CBAdvertisementDataLocalNameKey: "Peripheral - iOS"
-        ]
-        self.peripheralManager?.stopAdvertising()
-        self.peripheralManager?.startAdvertising(advertisingData)
 
     }
 
@@ -173,7 +183,7 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
                             let receivedData: [String: String] = try PropertyListSerialization.propertyList(from: value, options: [], format: nil) as! [String: String]
 
                             print("Written value is: \(receivedData)")
-                            self.bluetoothMessaging?.didReceiveData(data: receivedData)
+                            self.bluetoothMessaging?.didReceiveData()
 
                         } catch let error {
 
@@ -190,35 +200,23 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
         }
 
     }
-
-    // Listen to dynamic values
-    // Called when CBPeripheral .setNotifyValue(true, for: characteristic) is called
-    func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
-
-        print("\ndidSubscribeTo characteristic")
-
-        guard let characterisctic: CBMutableCharacteristic = self.characterisctic else { return }
-        
-        do {
-            
-            let dict: [String: String] = ["Hello": "Darkness"]
-            let data: Data = try PropertyListSerialization.data(fromPropertyList: dict, format: .binary, options: 0)
-            
-            self.peripheralManager?.updateValue(data, for: characterisctic, onSubscribedCentrals: [central])
-            self.bluetoothMessaging?.didSendData(data: dict)
-            
-        } catch let error {
-            
-            print(error)
-            
-        }
-        
-    }
     
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
         
         print("\ndidUnsubscribeFrom characteristic")
         
+        
+    }
+
+    func peripheralManager(_ peripheral: CBPeripheralManager, willRestoreState dict: [String : Any]) {
+
+        print("willRestoreState")
+        
+    }
+
+    func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
+
+        print("peripheralManagerIsReady")
         
     }
     
