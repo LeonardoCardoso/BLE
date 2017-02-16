@@ -8,7 +8,6 @@
 
 import Foundation
 import CoreBluetooth
-import BluetoothKit
 
 protocol BluetoothMessaging {
 
@@ -31,9 +30,18 @@ class BluetoothManager: NSObject {
     let characteristicUUID: String = "199ab74c-eed0-11E6-BC64-92361F002672"
     let localName: String = "Peripheral - iOS"
 
-    let peripheral: BKPeripheral = BKPeripheral()
-
     var bluetoothMessaging: BluetoothMessaging?
+    var peripheralManager: CBPeripheralManager?
+
+    var serviceCBUUID: CBUUID?
+    var characteristicCBUUID: CBUUID?
+
+    var service: CBMutableService?
+
+    let properties: CBCharacteristicProperties = [.read, .notify, .writeWithoutResponse, .write]
+    let permissions: CBAttributePermissions = [.readable, .writeable]
+
+    var characterisctic: CBMutableCharacteristic?
 
     // MARK: - Initializers
     convenience init (delegate: BluetoothMessaging?) {
@@ -41,56 +49,82 @@ class BluetoothManager: NSObject {
         self.init()
 
         self.bluetoothMessaging = delegate
-        self.peripheral.delegate = self
 
-        do {
+        guard
+            let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID?,
+            let characteristicUUID: UUID = NSUUID(uuidString: self.characteristicUUID) as UUID?
+            else { return }
 
-            guard
-                let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID?,
-                let characteristicUUID: UUID = NSUUID(uuidString: self.characteristicUUID) as UUID?
-                else { return }
+        self.serviceCBUUID = CBUUID(nsuuid: serviceUUID)
+        self.characteristicCBUUID = CBUUID(nsuuid: characteristicUUID)
 
-            let configuration = BKPeripheralConfiguration(
-                dataServiceUUID: serviceUUID,
-                dataServiceCharacteristicUUID: characteristicUUID,
-                localName: self.localName
-            )
+        guard
+            let serviceCBUUID: CBUUID = self.serviceCBUUID,
+            let characteristicCBUUID: CBUUID = self.characteristicCBUUID
+            else { return }
 
-            try self.peripheral.startWithConfiguration(configuration)
+        self.service = CBMutableService(type: serviceCBUUID, primary: true)
 
-            self.bluetoothMessaging?.didStartConfiguration()
-            print("Waiting connections from remote centrals")
+        self.characterisctic = CBMutableCharacteristic(type: characteristicCBUUID, properties: self.properties, value: nil, permissions: self.permissions)
 
-        } catch let error {
+        self.peripheralManager = CBPeripheralManager(delegate: self, queue: nil, options: [CBCentralManagerOptionRestoreIdentifierKey: self.peripheralId])
 
-            // Handle error.
-            print(error)
+        guard let characterisctic: CBCharacteristic = self.characterisctic else { return }
+
+        self.service?.characteristics = [characterisctic]
+
+    }
+
+}
+
+// MARK: - CBPeripheralManagerDelegate
+extension BluetoothManager: CBPeripheralManagerDelegate {
+
+    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
+
+        print("peripheralManagerDidUpdateState")
+
+        if peripheral.state == .poweredOn {
+
+            guard let service: CBMutableService = self.service else { return }
+
+            self.peripheralManager?.removeAllServices()
+            self.peripheralManager?.add(service)
 
         }
 
     }
 
-    // MARK: - Functions
-    func sendData(_ remotePeer: BKRemotePeer) {
+    func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
 
-        let info: [String: String] = [
-            "action": "open",
-            "peripheralId": self.peripheralId,
-            "peripheralName": self.localName
-        ]
+        print("peripheralManagerIsReady")
 
-        let data: Data = NSKeyedArchiver.archivedData(withRootObject: info)
+    }
 
-        self.peripheral.sendData(data, toRemotePeer: remotePeer) { data, remoteCentral, error in
+    func peripheralManagerDidStartAdvertising(_ peripheral: CBPeripheralManager, error: Error?) {
 
-            if error != nil {
+        print("peripheralManagerDidStartAdvertising")
 
-                print(error.debugDescription)
-                self.bluetoothMessaging?.didFailToSendData()
+    }
+
+    func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveRead request: CBATTRequest) {
+
+        print("didReceiveRead request")
+
+        if let uuid: CBUUID = self.characterisctic?.uuid, request.characteristic.uuid == uuid {
+
+            print("Match characteristic for reading")
+
+            if let value: Data = self.characterisctic?.value, request.offset > value.count {
+
+                print("Sending response: Error offset")
+
+                self.peripheralManager?.respond(to: request, withResult: .invalidOffset)
 
             } else {
 
-                self.bluetoothMessaging?.didSendData(data: info)
+                print("Sending response: Success")
+                self.peripheralManager?.respond(to: request, withResult: .success)
 
             }
 
@@ -99,35 +133,69 @@ class BluetoothManager: NSObject {
 
     }
 
-}
+    func peripheralManager(_ peripheral: CBPeripheralManager, willRestoreState dict: [String : Any]) {
 
-// MARK: - BKRemotePeerDelegate
-extension BluetoothManager: BKRemotePeerDelegate {
+        print("willRestoreState")
 
-    func remotePeer(_ remotePeer: BKRemotePeer, didSendArbitraryData data: Data) {
-
-        self.bluetoothMessaging?.didReceiveData(data: NSKeyedUnarchiver.unarchiveObject(with: data) as? [String : Any])
-
-        for remoteCentral in self.peripheral.connectedRemoteCentrals { self.sendData(remoteCentral) }
 
     }
 
-}
+    func peripheralManager(_ peripheral: CBPeripheralManager, didAdd service: CBService, error: Error?) {
 
-// MARK: - BKPeripheralDelegate
-extension BluetoothManager: BKPeripheralDelegate {
+        print("didAdd service")
 
-    func peripheral(_ peripheral: BKPeripheral, remoteCentralDidConnect remoteCentral: BKRemoteCentral) {
+        let advertisingData: [String: Any] = [
+            CBAdvertisementDataServiceUUIDsKey: [self.service?.uuid],
+            CBAdvertisementDataLocalNameKey: "Peripheral - iOS"
+        ]
+        self.peripheralManager?.stopAdvertising()
+        self.peripheralManager?.startAdvertising(advertisingData)
 
-        remoteCentral.delegate = self
-        self.bluetoothMessaging?.centralDidConnect(identifier: remoteCentral.identifier)
-        self.sendData(remoteCentral)
+    }
 
+    func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveWrite requests: [CBATTRequest]) {
+
+        print("didReceiveWrite requests")
+
+        guard let characteristicCBUUID: CBUUID = self.characteristicCBUUID else { return }
+
+        for request: CBATTRequest in requests {
+
+            if request.characteristic.uuid == characteristicCBUUID {
+
+                print("Match characteristic for writing")
+
+                if
+                    let value: Data = request.characteristic.value,
+                    let receivedData: [String: String] = NSKeyedUnarchiver.unarchiveObject(with: value) as? [String: String] {
+
+                    print("Written value is: \(receivedData)")
+
+                }
+
+            }
+
+        }
+
+    }
+
+    func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
+
+        print("didSubscribeTo characteristic")
+
+        guard let characterisctic: CBMutableCharacteristic = self.characterisctic else { return }
+        
+        let dict: [String: String] = ["Hello": "Darkness"]
+        let data: Data = NSKeyedArchiver.archivedData(withRootObject: dict)
+        
+        self.peripheralManager?.updateValue(data, for: characterisctic, onSubscribedCentrals: [central])
+        
     }
     
-    func peripheral(_ peripheral: BKPeripheral, remoteCentralDidDisconnect remoteCentral: BKRemoteCentral) {
+    func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
         
-        self.bluetoothMessaging?.centralDidDisconnect(identifier: remoteCentral.identifier)
+        print("didUnsubscribeFrom characteristic")
+        
         
     }
     

@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import BluetoothKit
+import CoreBluetooth
 import Cocoa
 
 protocol BluetoothMessaging {
@@ -33,10 +33,16 @@ class BluetoothManager: NSObject {
     let centralId: String = "62443cc7-15bc-4136-bf5d-0ad80c459216"
     let serviceUUID: String = "0cdbe648-eed0-11e6-bc64-92361f002671"
     let characteristicUUID: String = "199ab74c-eed0-11e6-bc64-92361f002672"
+    let peripheralLocalName: String = "Peripheral - iOS"
 
-    let central: BKCentral = BKCentral()
+    var serviceCBUUID: CBUUID?
+    var characteristicCBUUID: CBUUID?
 
     var bluetoothMessaging: BluetoothMessaging?
+
+    var centralManager: CBCentralManager?
+
+    var discoveredPeripheral: CBPeripheral?
 
     // MARK: - Initializers
     convenience init (delegate: BluetoothMessaging) {
@@ -45,56 +51,173 @@ class BluetoothManager: NSObject {
 
         self.bluetoothMessaging = delegate
 
-        self.central.delegate = self
+        guard
+            let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID?,
+            let characteristicUUID: UUID = NSUUID(uuidString: self.characteristicUUID) as UUID?
+            else { return }
+
+        self.serviceCBUUID = CBUUID(nsuuid: serviceUUID)
+        self.characteristicCBUUID = CBUUID(nsuuid: characteristicUUID)
 
     }
 
     // MARK: - Functions
     func scan() {
 
-        self.central.addAvailabilityObserver(self)
+        self.centralManager = CBCentralManager(delegate: self, queue: nil, options: nil)
 
-        do {
+    }
 
-            guard
-                let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID?,
-                let characteristicUUID: UUID = NSUUID(uuidString: self.characteristicUUID) as UUID?
-                else { return }
+}
 
-            let configuration = BKConfiguration(dataServiceUUID: serviceUUID, dataServiceCharacteristicUUID: characteristicUUID)
+// MARK: - CBCentralManagerDelegate
+extension BluetoothManager: CBCentralManagerDelegate {
 
-            try self.central.startWithConfiguration(configuration)
-            self.bluetoothMessaging?.didStartConfiguration()
+    func centralManagerDidUpdateState(_ central: CBCentralManager) {
 
-            // Once the availability observer has been positively notified, you're ready to discover and connect to peripherals.
+        print("centralManagerDidUpdateState")
 
-        } catch let error {
+        if central.state == .poweredOn {
 
-            // Handle error.
-            print(error)
+            guard let serviceCBUUID: CBUUID = self.serviceCBUUID else { return }
+
+            self.centralManager?.scanForPeripherals(withServices: [serviceCBUUID], options: nil)
 
         }
 
     }
 
-    func sendData(_ remotePeer: BKRemotePeer) {
+    func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
 
-        let info: [String: String] = [
-            "centralId": self.centralId
-        ]
+        print("didConnect")
 
-        let data: Data = NSKeyedArchiver.archivedData(withRootObject: info)
+        guard let serviceCBUUID: CBUUID = self.serviceCBUUID else { return }
 
-        self.central.sendData(data, toRemotePeer: remotePeer) { data, remoteCentral, error in
+        self.discoveredPeripheral?.discoverServices([serviceCBUUID])
 
-            if error != nil {
 
-                print(error.debugDescription)
-                self.bluetoothMessaging?.didFailToSendData()
+    }
 
-            } else {
+    func centralManager(_ central: CBCentralManager, willRestoreState dict: [String : Any]) {
 
-                self.bluetoothMessaging?.didSendData(data: info)
+        print("willRestoreState")
+
+
+    }
+
+    func centralManager(_ central: CBCentralManager, didRetrievePeripherals peripherals: [CBPeripheral]) {
+
+        print("didRetrievePeripherals")
+
+
+    }
+
+    func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
+
+        print("didFailToConnect")
+
+
+    }
+
+    func centralManager(_ central: CBCentralManager, didRetrieveConnectedPeripherals peripherals: [CBPeripheral]) {
+
+        print("didRetrieveConnectedPeripherals")
+
+
+    }
+
+    func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+
+        print("didDisconnectPeripheral")
+
+    }
+
+    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+
+        guard let name: String = peripheral.name else { return }
+
+        if name == self.peripheralLocalName {
+
+            // Once we found it, we stop scanning.
+//            self.centralManager?.stopScan()
+
+            // We must keep a reference to the new discovered peripheral, which means we must retain it. http://stackoverflow.com/a/20711503/1255990
+            self.discoveredPeripheral = peripheral
+
+            print("didDiscover:", self.discoveredPeripheral?.name ?? "")
+
+            self.discoveredPeripheral?.delegate = self
+
+            guard let discoveredPeripheral: CBPeripheral = self.discoveredPeripheral else { return }
+
+            self.centralManager?.connect(discoveredPeripheral, options: nil)
+
+        }
+
+    }
+
+}
+
+// MARK: - CBPeripheralDelegate
+extension BluetoothManager: CBPeripheralDelegate {
+
+
+    func peripheralDidUpdateName(_ peripheral: CBPeripheral) {
+
+        print("peripheralDidUpdateName")
+
+    }
+
+    func peripheralDidUpdateRSSI(_ peripheral: CBPeripheral, error: Error?) {
+
+        print("peripheralDidUpdateRSSI")
+
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+
+        print("didDiscoverServices")
+
+        guard
+            let characteristicCBUUID: CBUUID = self.characteristicCBUUID,
+            let services: [CBService] = self.discoveredPeripheral?.services
+            else { return }
+
+        for service: CBService in services {
+
+            if service.uuid == self.serviceCBUUID {
+
+                self.discoveredPeripheral?.discoverCharacteristics([characteristicCBUUID], for: service)
+
+            }
+
+        }
+
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor descriptor: CBDescriptor, error: Error?) {
+
+        print("didWriteValueFor")
+
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+
+        print("didDiscoverCharacteristicsFor")
+
+        guard let characteristics: [CBCharacteristic] = service.characteristics else { return }
+
+        for characteristic: CBCharacteristic in characteristics {
+
+            if characteristic.uuid == self.characteristicCBUUID {
+
+                print("Reading Data")
+
+                // For static values
+                self.discoveredPeripheral?.readValue(for: characteristic)
+
+                // For dynamic values
+                self.discoveredPeripheral?.setNotifyValue(true, for: characteristic)
 
             }
 
@@ -103,139 +226,53 @@ class BluetoothManager: NSObject {
 
     }
 
-}
+    func peripheral(_ peripheral: CBPeripheral, didModifyServices invalidatedServices: [CBService]) {
 
-// MARK: - BKRemotePeripheralDelegate
-extension BluetoothManager: BKRemotePeripheralDelegate {
-
-    func remotePeripheral(_ remotePeripheral: BKRemotePeripheral, didUpdateName name: String) { }
-
-    func remotePeripheralIsReady(_ remotePeripheral: BKRemotePeripheral) {
-
-        print("Remote Peripheral is ready for receiving data: ", remotePeripheral.name ?? "")
-        self.sendData(remotePeripheral)
+        print("didModifyServices")
 
     }
 
-}
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor descriptor: CBDescriptor, error: Error?) {
 
-// MARK: - BKRemotePeerDelegate
-extension BluetoothManager: BKRemotePeerDelegate {
+        print("didUpdateValueFor")
 
-    func remotePeer(_ remotePeer: BKRemotePeer, didSendArbitraryData data: Data) {
+    }
 
-        self.bluetoothMessaging?.didReceiveData(data: NSKeyedUnarchiver.unarchiveObject(with: data) as? [String : Any])
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverIncludedServicesFor service: CBService, error: Error?) {
+
+        print("didDiscoverIncludedServicesFor")
+
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
+
+        print("didWriteValueFor")
+
+    }
+
+    func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+        
+        print("didUpdateValueFor")
+        
+        print("Data: \(characteristic.value)")
+        
+        print("Write on peripheral.")
+        let dict: [String: String] = ["Yo": "Lo"]
+        let data: Data = NSKeyedArchiver.archivedData(withRootObject: dict)
+        self.discoveredPeripheral?.writeValue(data, for: characteristic, type: .withResponse)
         
     }
     
-}
-
-// MARK: - BKCentralDelegate
-extension BluetoothManager: BKCentralDelegate {
-
-    func central(_ central: BKCentral, remotePeripheralDidDisconnect remotePeripheral: BKRemotePeripheral) {
-
-        self.bluetoothMessaging?.peripheralDidDisconnect(name: remotePeripheral.name)
-
-    }
-
-}
-
-// MARK: - BKAvailabilityObserver
-extension BluetoothManager: BKAvailabilityObserver {
-
-
-    func availabilityObserver(_ availabilityObservable: BKAvailabilityObservable, availabilityDidChange availability: BKAvailability) {
-
-        print("Availability: \(availability)")
-        if availability == .available {
-
-//            self.central.scanContinuouslyWithChangeHandler({ changes, discoveries in
-//
-//                for result: BKDiscovery in discoveries {
-//
-//                    if result.remotePeripheral.state == .disconnected {
-//
-//                        result.remotePeripheral.delegate = self
-//                        result.remotePeripheral.peripheralDelegate = self
-//
-//                        self.central.connect(10.0, remotePeripheral: result.remotePeripheral) { remotePeripheral, error in
-//
-//                            if error == nil {
-//
-//                                print("Handshake: you're ready to receive data")
-//                                self.bluetoothMessaging?.didConnectPeripheral(name: remotePeripheral.name)
-//
-//                            } else {
-//
-//                                print("error: \(error)")
-//
-//                            }
-//
-//                        }
-//
-//                    }
-//                    
-//                }
-//                
-//            }, stateHandler: { _ in }, duration: 10, inBetweenDelay: 5, errorHandler: { error in
-//                
-//                print("\(error)")
-//                self.bluetoothMessaging?.didConnectionFailed()
-//                
-//            })
-
-            self.central
-                .scanWithDuration(
-                    3.0,
-                    progressHandler: { newDiscoveries in print(newDiscoveries.count) },
-                    completionHandler: { result, error in
-
-                        if error == nil, let result: [BKDiscovery] = result, result.count > 0 {
-
-                            for result: BKDiscovery in result {
-
-                                if result.remotePeripheral.state == .disconnected {
-
-                                    result.remotePeripheral.delegate = self
-                                    result.remotePeripheral.peripheralDelegate = self
-
-                                    self.central.connect(10.0, remotePeripheral: result.remotePeripheral) { remotePeripheral, error in
-
-                                        if error == nil {
-
-                                            print("Handshake: you're ready to receive data")
-                                            self.bluetoothMessaging?.didConnectPeripheral(name: remotePeripheral.name)
-
-                                        } else {
-                                            
-                                            print("error: \(error)")
-                                            
-                                        }
-                                        
-                                    }
-                                    
-                                }
-                                
-                            }
-                            
-                        } else if error != nil {
-                            
-                            print("\(error)")
-                            self.bluetoothMessaging?.didConnectionFailed()
-                            
-                        }
-                        
-                })
-            
-        }
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {
+        
+        print("didDiscoverDescriptorsFor")
         
     }
     
-    func availabilityObserver(_ availabilityObservable: BKAvailabilityObservable, unavailabilityCauseDidChange unavailabilityCause: BKUnavailabilityCause) {
+    func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         
-        print("unavailabilityCauseDidChange unavailabilityCause: \(unavailabilityCause)")
+        print("didUpdateNotificationStateFor")
         
     }
-
+    
 }
