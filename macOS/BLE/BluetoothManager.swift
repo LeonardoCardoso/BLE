@@ -213,13 +213,13 @@ extension BluetoothManager: CBPeripheralDelegate {
 
             if characteristic.uuid == self.characteristicCBUUID {
 
-                print("Reading Data")
+                print("Matching characteristic")
 
-                // For static values
-                self.discoveredPeripheral?.readValue(for: characteristic)
-
-                // For dynamic values
+                // To listen and read dynamic values
                 self.discoveredPeripheral?.setNotifyValue(true, for: characteristic)
+
+                // To read static values
+                // self.discoveredPeripheral?.readValue(for: characteristic)
 
             }
 
@@ -253,30 +253,49 @@ extension BluetoothManager: CBPeripheralDelegate {
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
-        
+
         print("\ndidUpdateValueFor")
 
-        if
-            let value: Data = characteristic.value,
-            let receivedData: [String: String] = NSKeyedUnarchiver.unarchiveObject(with: value) as? [String: String] {
+        if let value: Data = characteristic.value {
 
-            print("Value read is: \(receivedData)")
-            self.bluetoothMessaging?.didReceiveData(data: receivedData)
+            do {
+
+                let receivedData: [String: String] = try PropertyListSerialization.propertyList(from: value, options: [], format: nil) as! [String: String]
+
+                print("Value read is: \(receivedData)")
+                self.bluetoothMessaging?.didReceiveData(data: receivedData)
+
+            } catch let error {
+
+                print(error)
+
+            }
 
         }
 
-        print("Write on peripheral.")
-        let dict: [String: String] = ["Yo": "Lo"]
-        let data: Data = NSKeyedArchiver.archivedData(withRootObject: dict)
-        self.discoveredPeripheral?.writeValue(data, for: characteristic, type: .withResponse)
-        self.bluetoothMessaging?.didSendData(data: dict)
+        do {
 
-        // After we write data on peripheral, we can disconnect it like this
-        guard let discoveredPeripheral: CBPeripheral = self.discoveredPeripheral else { return }
-        self.centralManager?.cancelPeripheralConnection(discoveredPeripheral)
+            print("Write on peripheral.")
 
+            let dict: [String: String] = ["Yo": "Lo"]
+            let data: Data = try PropertyListSerialization.data(fromPropertyList: dict, format: .binary, options: 0)
+
+            self.discoveredPeripheral?.writeValue(data, for: characteristic, type: .withResponse)
+            self.bluetoothMessaging?.didSendData(data: dict)
+            
+        } catch let error {
+            
+            print(error)
+            
+        }
+        
+        
+        //         After we write data on peripheral, we can disconnect it like this
+        //        guard let discoveredPeripheral: CBPeripheral = self.discoveredPeripheral else { return }
+        //        self.centralManager?.cancelPeripheralConnection(discoveredPeripheral)
+        
         // We stop scanning.
-        self.centralManager?.stopScan()
+        //        self.centralManager?.stopScan()
         
     }
     

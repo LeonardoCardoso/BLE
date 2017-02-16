@@ -108,26 +108,15 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
     }
 
+    // Read static values
+    // Called when CBPeripheral .readValue(for: characteristic) is called
     func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveRead request: CBATTRequest) {
 
         print("\ndidReceiveRead request")
 
         if let uuid: CBUUID = self.characterisctic?.uuid, request.characteristic.uuid == uuid {
 
-            print("Match characteristic for reading")
-
-            if let value: Data = self.characterisctic?.value, request.offset > value.count {
-
-                print("Sending response: Error offset")
-
-                self.peripheralManager?.respond(to: request, withResult: .invalidOffset)
-
-            } else {
-
-                print("Sending response: Success")
-                self.peripheralManager?.respond(to: request, withResult: .success)
-
-            }
+            print("Matching characteristic for reading")
 
         }
 
@@ -162,16 +151,37 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
         for request: CBATTRequest in requests {
 
-            if request.characteristic.uuid == characteristicCBUUID {
+            if let value: Data = request.value, request.offset > value.count {
 
-                print("Match characteristic for writing")
+                print("Sending response: Error offset")
 
-                if
-                    let value: Data = request.characteristic.value,
-                    let receivedData: [String: String] = NSKeyedUnarchiver.unarchiveObject(with: value) as? [String: String] {
+                self.peripheralManager?.respond(to: request, withResult: .invalidOffset)
 
-                    print("Written value is: \(receivedData)")
-                    self.bluetoothMessaging?.didReceiveData(data: receivedData)
+            } else {
+
+                print("Sending response: Success")
+                self.peripheralManager?.respond(to: request, withResult: .success)
+
+                if request.characteristic.uuid == characteristicCBUUID {
+
+                    print("Matching characteristic for writing")
+
+                    if let value: Data = request.value {
+
+                        do {
+
+                            let receivedData: [String: String] = try PropertyListSerialization.propertyList(from: value, options: [], format: nil) as! [String: String]
+
+                            print("Written value is: \(receivedData)")
+                            self.bluetoothMessaging?.didReceiveData(data: receivedData)
+
+                        } catch let error {
+
+                            print(error)
+
+                        }
+
+                    }
 
                 }
 
@@ -181,17 +191,27 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
     }
 
+    // Listen to dynamic values
+    // Called when CBPeripheral .setNotifyValue(true, for: characteristic) is called
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
 
         print("\ndidSubscribeTo characteristic")
 
         guard let characterisctic: CBMutableCharacteristic = self.characterisctic else { return }
         
-        let dict: [String: String] = ["Hello": "Darkness"]
-        let data: Data = NSKeyedArchiver.archivedData(withRootObject: dict)
-        
-        self.peripheralManager?.updateValue(data, for: characterisctic, onSubscribedCentrals: [central])
-        self.bluetoothMessaging?.didSendData(data: dict)
+        do {
+            
+            let dict: [String: String] = ["Hello": "Darkness"]
+            let data: Data = try PropertyListSerialization.data(fromPropertyList: dict, format: .binary, options: 0)
+            
+            self.peripheralManager?.updateValue(data, for: characterisctic, onSubscribedCentrals: [central])
+            self.bluetoothMessaging?.didSendData(data: dict)
+            
+        } catch let error {
+            
+            print(error)
+            
+        }
         
     }
     
