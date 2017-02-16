@@ -259,15 +259,18 @@ extension BluetoothManager: CBPeripheralDelegate {
         
     }
 
-    func peripheralDidUpdateName(_ peripheral: CBPeripheral) {
-
-        print("\nperipheralDidUpdateName")
-
-    }
-
     func peripheralDidUpdateRSSI(_ peripheral: CBPeripheral, error: Error?) {
 
         print("\nperipheralDidUpdateRSSI")
+
+        // It only works if device is connected and it takes a few seconds to read signal strength. Call the function self.discoveredPeripheral?.readRSSI()
+        print(self.discoveredPeripheral?.rssi ?? "")
+        
+    }
+
+    func peripheralDidUpdateName(_ peripheral: CBPeripheral) {
+
+        print("\nperipheralDidUpdateName")
 
     }
 

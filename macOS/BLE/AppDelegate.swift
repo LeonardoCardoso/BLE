@@ -3,7 +3,7 @@
 //  BLE
 //
 //  Created by Leonardo Cardoso on 09/02/2017.
-//  Copyright © 2017 1aim.com. All rights reserved.
+//  Copyright © 2017 leocardz.com. All rights reserved.
 //
 
 import Cocoa
