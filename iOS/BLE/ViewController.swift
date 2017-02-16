@@ -40,6 +40,13 @@ extension ViewController: BluetoothMessaging {
 
     }
 
+    func didStartAdvertising() {
+
+        self.label.text = "\(Date()) Start advertising"
+        print(self.label.text ?? "")
+
+    }
+
     func didSendData(data: [String: Any]?) {
 
         self.label.text = "\(Date()) Did send data"
@@ -47,33 +54,10 @@ extension ViewController: BluetoothMessaging {
 
     }
 
-    func didFailToSendData() {
-
-        self.label.text = "\(Date()) Did fail to send data"
-        print(self.label.text ?? "")
-
-    }
-
     func didReceiveData(data: [String: Any]?) {
 
         self.label.text = "\(Date()) Did received data"
         print("Did received data: ", data ?? [:])
-
-    }
-
-    func centralDidConnect(identifier: UUID?) {
-
-        guard let identifier: UUID = identifier else { return }
-        self.label.text = "\(Date()) Central connected: \(identifier)"
-        print(self.label.text ?? "")
-
-    }
-
-    func centralDidDisconnect(identifier: UUID?) {
-
-        guard let identifier: UUID = identifier else { return }
-        self.label.text = "\(Date()) Central disconnected: \(identifier)"
-        print(self.label.text ?? "")
 
     }
 

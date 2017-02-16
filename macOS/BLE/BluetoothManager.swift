@@ -14,16 +14,15 @@ protocol BluetoothMessaging {
 
     func didStartConfiguration()
 
+    func didStartScanningPeripherals()
+
     func didConnectPeripheral(name: String?)
     func didDisconnectPeripheral(name: String?)
 
     func didSendData(data: [String: Any]?)
-    func didFailToSendData()
     func didReceiveData(data: [String: Any]?)
 
-    func didConnectionFailed()
-
-    func peripheralDidDisconnect(name: String?)
+    func didFailConnection()
 
 }
 
@@ -65,6 +64,7 @@ class BluetoothManager: NSObject {
     func scan() {
 
         self.centralManager = CBCentralManager(delegate: self, queue: nil, options: nil)
+        self.bluetoothMessaging?.didStartConfiguration()
 
     }
 
@@ -81,6 +81,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
             guard let serviceCBUUID: CBUUID = self.serviceCBUUID else { return }
 
+            self.bluetoothMessaging?.didStartScanningPeripherals()
             self.centralManager?.scanForPeripherals(withServices: [serviceCBUUID], options: nil)
 
         }
@@ -89,7 +90,9 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
 
-        print("didConnect")
+        print("\ndidConnect")
+
+        self.bluetoothMessaging?.didConnectPeripheral(name: peripheral.name ?? "")
 
         guard let serviceCBUUID: CBUUID = self.serviceCBUUID else { return }
 
@@ -107,28 +110,31 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didRetrievePeripherals peripherals: [CBPeripheral]) {
 
-        print("didRetrievePeripherals")
+        print("\ndidRetrievePeripherals")
 
 
     }
 
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
 
-        print("didFailToConnect")
+        print("\ndidFailToConnect")
+
+        self.bluetoothMessaging?.didFailConnection()
 
 
     }
 
     func centralManager(_ central: CBCentralManager, didRetrieveConnectedPeripherals peripherals: [CBPeripheral]) {
 
-        print("didRetrieveConnectedPeripherals")
+        print("\ndidRetrieveConnectedPeripherals")
 
 
     }
 
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
 
-        print("didDisconnectPeripheral")
+        print("\ndidDisconnectPeripheral")
+        self.bluetoothMessaging?.didDisconnectPeripheral(name: peripheral.name ?? "")
 
     }
 
@@ -138,18 +144,14 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
         if name == self.peripheralLocalName {
 
-            // Once we found it, we stop scanning.
-//            self.centralManager?.stopScan()
-
             // We must keep a reference to the new discovered peripheral, which means we must retain it. http://stackoverflow.com/a/20711503/1255990
             self.discoveredPeripheral = peripheral
 
-            print("didDiscover:", self.discoveredPeripheral?.name ?? "")
+            print("\ndidDiscover:", self.discoveredPeripheral?.name ?? "")
 
             self.discoveredPeripheral?.delegate = self
 
             guard let discoveredPeripheral: CBPeripheral = self.discoveredPeripheral else { return }
-
             self.centralManager?.connect(discoveredPeripheral, options: nil)
 
         }
@@ -176,7 +178,7 @@ extension BluetoothManager: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
 
-        print("didDiscoverServices")
+        print("\ndidDiscoverServices")
 
         guard
             let characteristicCBUUID: CBUUID = self.characteristicCBUUID,
@@ -197,13 +199,13 @@ extension BluetoothManager: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor descriptor: CBDescriptor, error: Error?) {
 
-        print("didWriteValueFor")
+        print("\ndidWriteValueFor")
 
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
 
-        print("didDiscoverCharacteristicsFor")
+        print("\ndidDiscoverCharacteristicsFor")
 
         guard let characteristics: [CBCharacteristic] = service.characteristics else { return }
 
@@ -228,50 +230,65 @@ extension BluetoothManager: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didModifyServices invalidatedServices: [CBService]) {
 
-        print("didModifyServices")
+        print("\ndidModifyServices")
 
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor descriptor: CBDescriptor, error: Error?) {
 
-        print("didUpdateValueFor")
+        print("\ndidUpdateValueFor")
 
     }
 
     func peripheral(_ peripheral: CBPeripheral, didDiscoverIncludedServicesFor service: CBService, error: Error?) {
 
-        print("didDiscoverIncludedServicesFor")
+        print("\ndidDiscoverIncludedServicesFor")
 
     }
 
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
 
-        print("didWriteValueFor")
+        print("\ndidWriteValueFor")
 
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         
-        print("didUpdateValueFor")
-        
-        print("Data: \(characteristic.value)")
-        
+        print("\ndidUpdateValueFor")
+
+        if
+            let value: Data = characteristic.value,
+            let receivedData: [String: String] = NSKeyedUnarchiver.unarchiveObject(with: value) as? [String: String] {
+
+            print("Value read is: \(receivedData)")
+            self.bluetoothMessaging?.didReceiveData(data: receivedData)
+
+        }
+
         print("Write on peripheral.")
         let dict: [String: String] = ["Yo": "Lo"]
         let data: Data = NSKeyedArchiver.archivedData(withRootObject: dict)
         self.discoveredPeripheral?.writeValue(data, for: characteristic, type: .withResponse)
+        self.bluetoothMessaging?.didSendData(data: dict)
+
+        // After we write data on peripheral, we can disconnect it like this
+        guard let discoveredPeripheral: CBPeripheral = self.discoveredPeripheral else { return }
+        self.centralManager?.cancelPeripheralConnection(discoveredPeripheral)
+
+        // We stop scanning.
+        self.centralManager?.stopScan()
         
     }
     
     func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {
         
-        print("didDiscoverDescriptorsFor")
+        print("\ndidDiscoverDescriptorsFor")
         
     }
     
     func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
         
-        print("didUpdateNotificationStateFor")
+        print("\ndidUpdateNotificationStateFor")
         
     }
     

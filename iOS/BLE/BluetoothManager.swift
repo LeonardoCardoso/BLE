@@ -13,12 +13,10 @@ protocol BluetoothMessaging {
 
     func didStartConfiguration()
 
-    func didSendData(data: [String: Any]?)
-    func didFailToSendData()
-    func didReceiveData(data: [String: Any]?)
+    func didStartAdvertising()
 
-    func centralDidConnect(identifier: UUID?)
-    func centralDidDisconnect(identifier: UUID?)
+    func didSendData(data: [String: Any]?)
+    func didReceiveData(data: [String: Any]?)
 
 }
 
@@ -73,6 +71,8 @@ class BluetoothManager: NSObject {
 
         self.service?.characteristics = [characterisctic]
 
+        self.bluetoothMessaging?.didStartConfiguration()
+
     }
 
 }
@@ -104,12 +104,13 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
     func peripheralManagerDidStartAdvertising(_ peripheral: CBPeripheralManager, error: Error?) {
 
         print("peripheralManagerDidStartAdvertising")
+        self.bluetoothMessaging?.didStartAdvertising()
 
     }
 
     func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveRead request: CBATTRequest) {
 
-        print("didReceiveRead request")
+        print("\ndidReceiveRead request")
 
         if let uuid: CBUUID = self.characterisctic?.uuid, request.characteristic.uuid == uuid {
 
@@ -142,7 +143,7 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
     func peripheralManager(_ peripheral: CBPeripheralManager, didAdd service: CBService, error: Error?) {
 
-        print("didAdd service")
+        print("\ndidAdd service")
 
         let advertisingData: [String: Any] = [
             CBAdvertisementDataServiceUUIDsKey: [self.service?.uuid],
@@ -155,7 +156,7 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
     func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveWrite requests: [CBATTRequest]) {
 
-        print("didReceiveWrite requests")
+        print("\ndidReceiveWrite requests")
 
         guard let characteristicCBUUID: CBUUID = self.characteristicCBUUID else { return }
 
@@ -170,6 +171,7 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
                     let receivedData: [String: String] = NSKeyedUnarchiver.unarchiveObject(with: value) as? [String: String] {
 
                     print("Written value is: \(receivedData)")
+                    self.bluetoothMessaging?.didReceiveData(data: receivedData)
 
                 }
 
@@ -181,7 +183,7 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didSubscribeTo characteristic: CBCharacteristic) {
 
-        print("didSubscribeTo characteristic")
+        print("\ndidSubscribeTo characteristic")
 
         guard let characterisctic: CBMutableCharacteristic = self.characterisctic else { return }
         
@@ -189,12 +191,13 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
         let data: Data = NSKeyedArchiver.archivedData(withRootObject: dict)
         
         self.peripheralManager?.updateValue(data, for: characterisctic, onSubscribedCentrals: [central])
+        self.bluetoothMessaging?.didSendData(data: dict)
         
     }
     
     func peripheralManager(_ peripheral: CBPeripheralManager, central: CBCentral, didUnsubscribeFrom characteristic: CBCharacteristic) {
         
-        print("didUnsubscribeFrom characteristic")
+        print("\ndidUnsubscribeFrom characteristic")
         
         
     }
