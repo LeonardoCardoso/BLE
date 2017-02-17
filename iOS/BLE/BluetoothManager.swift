@@ -8,6 +8,7 @@
 
 import Foundation
 import CoreBluetooth
+import UIKit
 
 protocol BlueEar {
 
@@ -26,12 +27,11 @@ class BluetoothManager: NSObject {
     let peripheralId: String = "62443cc7-15bc-4136-bf5d-0ad80c459215"
     let serviceUUID: String = "0cdbe648-eed0-11e6-bc64-92361f002671"
     let characteristicUUID: String = "199ab74c-eed0-11E6-BC64-92361F002672"
-    let localName: String = "Peripheral - iOS"
 
     let properties: CBCharacteristicProperties = [.read, .notify, .writeWithoutResponse, .write]
     let permissions: CBAttributePermissions = [.readable, .writeable]
 
-    var bluetoothMessaging: BlueEar?
+    var blueEar: BlueEar?
     var peripheralManager: CBPeripheralManager?
 
     var serviceCBUUID: CBUUID?
@@ -46,7 +46,7 @@ class BluetoothManager: NSObject {
 
         self.init()
 
-        self.bluetoothMessaging = delegate
+        self.blueEar = delegate
 
         guard
             let serviceUUID: UUID = NSUUID(uuidString: self.serviceUUID) as UUID?,
@@ -65,13 +65,28 @@ class BluetoothManager: NSObject {
 
         self.characterisctic = CBMutableCharacteristic(type: characteristicCBUUID, properties: self.properties, value: nil, permissions: self.permissions)
 
-        self.peripheralManager = CBPeripheralManager(delegate: self, queue: nil, options: [CBCentralManagerOptionRestoreIdentifierKey: self.peripheralId])
+        let options: [String: Any] = [
+            CBCentralManagerOptionRestoreIdentifierKey: self.peripheralId
+        ]
+
+        self.peripheralManager = CBPeripheralManager(delegate: self, queue: nil, options: options)
 
         guard let characterisctic: CBCharacteristic = self.characterisctic else { return }
 
         self.service?.characteristics = [characterisctic]
 
-        self.bluetoothMessaging?.didStartConfiguration()
+        self.blueEar?.didStartConfiguration()
+
+    }
+
+    // MARK: - Functions
+    func sendLocalNotification(text: String) {
+
+        let notification: UILocalNotification = UILocalNotification()
+        notification.alertTitle = "BLE"
+        notification.alertBody = text
+
+        UIApplication.shared.presentLocalNotificationNow(notification)
 
     }
 
@@ -82,7 +97,7 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
     func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
 
-        print("peripheralManagerDidUpdateState")
+        print("\nperipheralManagerDidUpdateState")
 
         if peripheral.state == .poweredOn {
 
@@ -100,8 +115,7 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
         print("\ndidAdd service")
 
         let advertisingData: [String: Any] = [
-            CBAdvertisementDataServiceUUIDsKey: [self.service?.uuid],
-            CBAdvertisementDataLocalNameKey: "Peripheral - iOS"
+            CBAdvertisementDataServiceUUIDsKey: [self.service?.uuid]
         ]
         self.peripheralManager?.stopAdvertising()
         self.peripheralManager?.startAdvertising(advertisingData)
@@ -110,8 +124,9 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
     func peripheralManagerDidStartAdvertising(_ peripheral: CBPeripheralManager, error: Error?) {
 
-        print("peripheralManagerDidStartAdvertising")
-        self.bluetoothMessaging?.didStartAdvertising()
+        print("\nperipheralManagerDidStartAdvertising")
+
+        self.blueEar?.didStartAdvertising()
         
     }
 
@@ -129,7 +144,8 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
             let data: Data = try PropertyListSerialization.data(fromPropertyList: dict, format: .binary, options: 0)
 
             self.peripheralManager?.updateValue(data, for: characterisctic, onSubscribedCentrals: [central])
-            self.bluetoothMessaging?.didSendData()
+
+            self.blueEar?.didSendData()
 
         } catch let error {
 
@@ -182,8 +198,9 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
 
                             let receivedData: [String: String] = try PropertyListSerialization.propertyList(from: value, options: [], format: nil) as! [String: String]
 
-                            print("Written value is: \(receivedData)")
-                            self.bluetoothMessaging?.didReceiveData()
+                            self.sendLocalNotification(text: "Value written by central is: \(receivedData)")
+
+                            self.blueEar?.didReceiveData()
 
                         } catch let error {
 
@@ -205,18 +222,17 @@ extension BluetoothManager: CBPeripheralManagerDelegate {
         
         print("\ndidUnsubscribeFrom characteristic")
         
-        
     }
 
     func peripheralManager(_ peripheral: CBPeripheralManager, willRestoreState dict: [String : Any]) {
 
-        print("willRestoreState")
+        print("\nwillRestoreState")
         
     }
 
     func peripheralManagerIsReady(toUpdateSubscribers peripheral: CBPeripheralManager) {
 
-        print("peripheralManagerIsReady")
+        print("\nperipheralManagerIsReady")
         
     }
     
