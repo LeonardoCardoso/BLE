@@ -118,13 +118,11 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
         self.discoveredPeripheral?.discoverServices([serviceCBUUID])
 
-
     }
 
     func centralManager(_ central: CBCentralManager, willRestoreState dict: [String : Any]) {
 
         print("willRestoreState")
-
 
     }
 
@@ -166,19 +164,12 @@ extension BluetoothManager: CBPeripheralDelegate {
 
         print("\ndidDiscoverServices")
 
-        guard
-            let characteristicCBUUID: CBUUID = self.characteristicCBUUID,
-            let services: [CBService] = self.discoveredPeripheral?.services
-            else { return }
+        if let service: CBService = self.discoveredPeripheral?.services?.filter({ $0.uuid == self.serviceCBUUID }).first {
 
-        for service: CBService in services {
+            guard let characteristicCBUUID: CBUUID = self.characteristicCBUUID else { return }
 
-            if service.uuid == self.serviceCBUUID {
+            self.discoveredPeripheral?.discoverCharacteristics([characteristicCBUUID], for: service)
 
-                self.discoveredPeripheral?.discoverCharacteristics([characteristicCBUUID], for: service)
-
-            }
-            
         }
         
     }
@@ -199,21 +190,15 @@ extension BluetoothManager: CBPeripheralDelegate {
 
         print("\ndidDiscoverCharacteristicsFor")
 
-        guard let characteristics: [CBCharacteristic] = service.characteristics else { return }
+        if let characteristic: CBCharacteristic = service.characteristics?.filter({ $0.uuid == self.characteristicCBUUID }).first {
 
-        for characteristic: CBCharacteristic in characteristics {
+            print("Matching characteristic")
 
-            if characteristic.uuid == self.characteristicCBUUID {
+            // To listen and read dynamic values
+            self.discoveredPeripheral?.setNotifyValue(true, for: characteristic)
 
-                print("Matching characteristic")
-
-                // To listen and read dynamic values
-                self.discoveredPeripheral?.setNotifyValue(true, for: characteristic)
-
-                // To read static values
-                // self.discoveredPeripheral?.readValue(for: characteristic)
-                
-            }
+            // To read static values
+            // self.discoveredPeripheral?.readValue(for: characteristic)
             
         }
         
