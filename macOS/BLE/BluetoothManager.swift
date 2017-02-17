@@ -75,7 +75,7 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
 
-        print("centralManagerDidUpdateState")
+        print("\ncentralManagerDidUpdateState \(Date())")
 
         if central.state == .poweredOn {
 
@@ -176,7 +176,7 @@ extension BluetoothManager: CBPeripheralDelegate {
 
     func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
 
-        print("\ndidWriteValueFor")
+        print("\ndidWriteValueFor \(Date())")
 
         // After we write data on peripheral, we disconnect it.
         self.centralManager?.cancelPeripheralConnection(peripheral)
