@@ -29,10 +29,8 @@ protocol BlueEar {
 class BluetoothManager: NSObject {
 
     // MARK: - Properties
-    let centralId: String = "62443cc7-15bc-4136-bf5d-0ad80c459216"
     let serviceUUID: String = "0cdbe648-eed0-11e6-bc64-92361f002671"
     let characteristicUUID: String = "199ab74c-eed0-11e6-bc64-92361f002672"
-    let peripheralLocalName: String = "Peripheral - iOS"
 
     var serviceCBUUID: CBUUID?
     var characteristicCBUUID: CBUUID?
@@ -90,21 +88,15 @@ extension BluetoothManager: CBCentralManagerDelegate {
 
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
 
-        guard let name: String = peripheral.name else { return }
+        // We must keep a reference to the new discovered peripheral, which means we must retain it.
+        self.discoveredPeripheral = peripheral
 
-        if name == self.peripheralLocalName {
+        print("\ndidDiscover:", self.discoveredPeripheral?.name ?? "")
 
-            // We must keep a reference to the new discovered peripheral, which means we must retain it. http://stackoverflow.com/a/20711503/1255990
-            self.discoveredPeripheral = peripheral
+        self.discoveredPeripheral?.delegate = self
 
-            print("\ndidDiscover:", self.discoveredPeripheral?.name ?? "")
-
-            self.discoveredPeripheral?.delegate = self
-
-            guard let discoveredPeripheral: CBPeripheral = self.discoveredPeripheral else { return }
-            self.centralManager?.connect(discoveredPeripheral, options: nil)
-            
-        }
+        guard let discoveredPeripheral: CBPeripheral = self.discoveredPeripheral else { return }
+        self.centralManager?.connect(discoveredPeripheral, options: nil)
         
     }
 
@@ -209,6 +201,7 @@ extension BluetoothManager: CBPeripheralDelegate {
 
         print("\ndidUpdateValueFor")
 
+        // We read
         if let value: Data = characteristic.value {
 
             do {
@@ -226,6 +219,7 @@ extension BluetoothManager: CBPeripheralDelegate {
 
         }
 
+        // We write
         do {
 
             print("\nWriting on peripheral.")
@@ -247,8 +241,6 @@ extension BluetoothManager: CBPeripheralDelegate {
     func peripheralDidUpdateRSSI(_ peripheral: CBPeripheral, error: Error?) {
 
         print("\nperipheralDidUpdateRSSI")
-
-        // It only works if device is connected and it takes a few seconds to read signal strength. Call the function self.discoveredPeripheral?.readRSSI()
         print(self.discoveredPeripheral?.rssi ?? "")
         
     }
