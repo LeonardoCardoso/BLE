@@ -1,6 +1,6 @@
 # Intro
 
-É muito comum hoje estarmos em contato com dispositivos sem fio no nosso dia-a-dia. Seja um *headphone*, um *mouse*, um teclado, ou o famigerado *Apple Watch*. A lista é extensa... Todos eles, porém, utilizam basicamente uma mesma tecnologia que os torna de fato *wireless*: **Bluetooth®**.
+É muito comum hoje estarmos em contato com dispositivos sem fio no nosso dia-a-dia. Seja um *headphone*, um *mouse*, um teclado, ou o famigerado *Apple Watch*. A lista é extensa… A maioria deles, porém, utiliza basicamente uma mesma tecnologia que os torna de fato *wireless*: **Bluetooth®**.
 
 Aqui vamos aprender brevemente os papeis executados e propriedades difundidas numa conexão via *Bluetooth*, e os modos de execução desses papeis utilizando o *framework* **Core Bluetooth**, que nos dá o suporte à versão 4.0 (*a.k.a smart, a.k.a. low-energy*).
 
@@ -16,7 +16,7 @@ Se o app é minimizado ou outro app se torna o principal utilizado pelo usuário
 
 Explicaremos mais abaixo a diferença entre os papeis e as propriedades, mas nesse modo caso o aplicativo não esteja ativo, o periférico não consegue enviar propagandas (*advertising*) e a central não consegue difundir seu sinal (*scanning*), porém a execução de *advertising* e *scanning* são respondidas sob demanda, praticamente sem atrasos.
 
-A vantagem de usarmos em *Foreground* é que temos o todos os recursos do sistema ao nosso alcance, como por exemplo, atualização de *views* e tarefas sem tempo limite de execução. Ainda nesse modo, nossa *stack* de dispositivos é bem distrinchada, inclusive tendo a opção de escolher se queremos escanear o mesmo periférico por alguma razão específica. Isso é feito através de uma propriedade `CBCentralManagerScanOptionAllowDuplicatesKey`, o que no modo *Background* é ignorada, assim como outras propriedades são tratadas diferentes quando executadas em modos *Foreground* e *Background* e elas podem ser achadas nas [Referências](#referências).
+A vantagem de usarmos em *Foreground* é que temos o todos os recursos do sistema ao nosso alcance, como por exemplo, atualização de *views* e tarefas sem tempo limite de execução. Ainda nesse modo, nossa *stack* de dispositivos é bem destrinchada, inclusive tendo a opção de escolher se queremos escanear o mesmo periférico por alguma razão específica. Isso é feito através de uma propriedade `CBCentralManagerScanOptionAllowDuplicatesKey`, o que no modo *Background* é ignorada, assim como outras propriedades são tratadas diferentes quando executadas em modos *Foreground* e *Background* e elas podem ser achadas nas [Referências](#referências).
 
 ## Background
 
@@ -49,13 +49,13 @@ Nesse jogo de conexões *Bluetooth*, nós temos dois papeis distintos e bem espe
 
 Um periférico é o dispositivo que compartilha seus dados para a central. Nesse modo, o sistema acorda nosso app para processar tarefas de leitura, escrita, inscrições de eventos vindos da central. É o dispositivo que funciona como *Server*, ou seja, tem os dados que se desejam.
 
-Quando um periférico está sendo executado em *Background*, seus serviços são realocados para uma área de "*overflow*" especial, ou seja, todos os *UUIDs* dos serviços contidos na valor da propriedade `CBAdvertisementDataServiceUUIDsKey`. Sendo assim, ele só pode ser descoberto por um dispositivo que esteja explicitamente escaneando por ele, procurando por alguma de sua característica, basicamente seu indentificador.
+Quando um periférico está sendo executado em *Background*, seus serviços são realocados para uma área de "*overflow*" especial, ou seja, todos os *UUIDs* dos serviços contidos na valor da propriedade `CBAdvertisementDataServiceUUIDsKey`. Sendo assim, ele só pode ser descoberto por um dispositivo que esteja explicitamente escaneando por ele, procurando por alguma de sua característica, basicamente seu identificador.
 
 ## Central
 
-Uma central é o dispositivo que requer informações de dispositivos periféricos. Nesse caso, ela escaneia, connecta, obtém dados e envia dados, os explora. O *Client*.
+Uma central é o dispositivo que requisita informações de dispositivos periféricos. Nesse caso, ela escaneia, conecta, obtém dados e envia dados, os explora. É o *Client*.
 
-O sistema acorda nossa central quando eventos de mudança de estado ocorrem com o periférico, tais como conexão estabelecida ou cortada com o periférico, quando periférico atualiza informações de suas caractéristicas, ou ainda quando nossa central está perto de ser finalizada e também restaurada. 
+O sistema acorda nossa central quando eventos de mudança de estado ocorrem com o periférico, tais como conexão estabelecida ou cortada com o periférico, quando periférico atualiza informações de suas características, ou ainda quando nossa central está perto de ser finalizada e também restaurada. 
 
 ### Exemplo
 
@@ -69,30 +69,30 @@ A conexão entre uma central e um periférico é feita através de escaneamento 
 
 - Um periférico difunde um sinal que pode ser conectado usando pacotes de propaganda;
 - Enquanto a central difunde um sinal que está procurando por periférico;
-- Quando uma central encontra um periférico, ele pode explorar primeiro requisitar a conexão, o que pode ser rejeitada pelo periférico ou não. Essa conexão pode ser encriptada com a encriptação nativa que o *Core Bluetooth* nos provê. Se a conexão encriptada for desejada, então um código aparece num dos dispositivos para ser digitado no outro e assim criar pares de criptografia administrados pelo próprio sistema, tornando-os dispositivos confiáveis. Se nenhuma criptografia for requerida, então a conexão é feita automática;
+- Quando uma central encontra um periférico, ele pode primeiro requisitar a conexão, o que pode ser rejeitada pelo periférico ou não. Essa conexão pode ser encriptada com a encriptação nativa que o *Core Bluetooth* nos provê. Se a conexão encriptada for desejada, então um código aparece num dos dispositivos para ser digitado no outro e assim criar pares de criptografia administrados pelo próprio sistema, tornando-os dispositivos confiáveis. Se nenhuma criptografia for requerida, então a conexão é feita automática;
 - Após a conexão ser feita, a central pode então ordenar que o periférico descubra serviços, basicamente a central está explorando os serviços do periférico;
 - Após serviços descobertos, a central pode então ordenar que o periférico descubra características, basicamente a central está explorando as características de cada serviço do periférico;
-- Descobertas as características, a central pode então ler valores das características estaticamente ou se increver naquela característica e caso o periférico atualize o valor dela, a central será notificada com o novo valor.
+- Descobertas as características, a central pode então ler valores das características estaticamente ou se inscrever naquela característica e caso o periférico atualize o valor dela, a central será notificada com o novo valor.
 - A conexão pode ser finalizada, se for o caso.
 
 ![advertising-discovery.png](assets/img/advertising-discovery.png)
 
 # Serviços e Características
 
-As trocas de dados feitas por dispositivos conectados são através de propriedades e elas são serviços e características já comentadas em algumas partes anteriormente.
+As trocas de dados por dispositivos conectados são feitas através de propriedades e elas são serviços e características já comentadas em algumas partes anteriormente.
 
-Um serviço é uma coleção de dados e comportamentos associados para completar uma tarefa ou uma função de um disposito, ou partes de um dispositivo. Esses comportamentos são chamados de características. Uma característica provê mais detalhes sobre um serviço de um periférico. Parece basicamente uma descrição daqueles verbetes que você procura em um dicionário. Uma definição te leva pra outra e você fica num eterno *loop*. Mas vamos tentar explicar melhor mais abaixo.
+Um serviço é uma coleção de dados e comportamentos associados para completar uma tarefa ou uma função de um dispositivo, ou partes de um dispositivo. Esses comportamentos são chamados de características. Uma característica provê mais detalhes sobre um serviço de um periférico. Parece basicamente uma descrição daqueles verbetes que você procura em um dicionário. Uma definição te leva pra outra e você fica num eterno *loop*. Mas vamos tentar explicar melhor mais abaixo.
 
-Serviços podem ter outros serviços relacionados, como dependências, apontando para *UUIDs* de outros serviços. Cada característica também tem *UUID* que a possa indentificar.
+Serviços podem ter outros serviços relacionados, como dependências, apontando para *UUIDs* de outros serviços. Cada característica também tem *UUID* que a possa identificar.
 ![services-characterisctic.png](assets/img/services-characterisctic.png)Então nesse exemplo nós temos dois sensores que funcionam diferentes um do outro mas juntos eles produzem um serviço, que é o Batimento Cardíaco. Para que ele funcione corretamente, o sensor cardíaco deve estar posicionado no local ideal.
 
-Ainda utilizando o nosso exemplo anterior, suponha que no dispositivo de batimento cardíaco poderíamos ter dois serviços, um com duas caracterícticas e outro com apenas uma:
+Ainda utilizando o nosso exemplo anterior, suponha que no dispositivo de batimento cardíaco poderíamos ter dois serviços, um com duas características e outro com apenas uma:
 
 - Serviço 1: Batimentos Cardíacos
     - Característica 1: Medição dos Batimentos Cardíacos
     - Característica 2: Localização Adequada do Dispositivo
 - Serviço 2: Status
-    - Característica 1: Nível de BateriaMas um periférico é nada se não estiver enviando propagandas. Um pacote de propaganda é relativamente um pequeno agrupamento de dados que tem informações sobre o que o dispositivo periférico para um reconhecimento inicial. Dados como nome do dispositivo, *UUID* e *RSSI*, que é uma informação de quão forte é o sinal do periférico.
+    - Característica 1: Nível de BateriaMas um periférico é nada se não estiver enviando propagandas. Um pacote de propaganda é relativamente um pequeno agrupamento de dados que tem informações sobre o dispositivo periférico para um reconhecimento inicial. Dados como nome do dispositivo, *UUID* e *RSSI*, que é uma informação de quão forte é o sinal do periférico.
 
 # Pra onde vamos nós?
 
@@ -110,7 +110,7 @@ Para conferir o modo *background*, confira no [repositório desse projeto no Git
 
 ## Foreground
 
-Primeiro, vamos criar um protocolor para receber os eventos escutados do `BluetoothManager` e atualizar as views dos nossos `ViewController`s. Vamos chamá-lo de `BlueEar`. E tem uma versão para a `Central` e outra pro `Peripheral`. Assim como o `BlueEar`, teremos uma classe que será a administradora da nossa conexão *Bluetooth* e é a `BluetoothManager`.
+Primeiro, vamos criar um protocolo para receber os eventos escutados do `BluetoothManager` e atualizar as views dos nossos `ViewController`s. Vamos chamá-lo de `BlueEar`. E tem uma versão para a `Central` e outra pro `Peripheral`. Assim como o `BlueEar`, teremos uma classe que será a administradora da nossa conexão *Bluetooth* e é a `BluetoothManager`.
 
 ### iOS
 
@@ -344,7 +344,7 @@ class ViewController: UIViewController {
     // MARK: - IBOutlet
     @IBOutlet var label: UILabel!
 
-    // MARK: - Lifecyle
+    // MARK: - Life Cycle
     override var preferredStatusBarStyle: UIStatusBarStyle { return .lightContent }
 
     // MARK: - Properties
@@ -383,7 +383,7 @@ extension ViewController: BlueEar {
 
 - No nosso exemplo, o Periférico vai começar a fazer propaganda quando iniciar o `app`.
 - Você só pode fazer alguma coisa com o periférico quando a função `peripheralManagerDidUpdateState(: CBPeripheralManager)` for chamada e o estado do periférico estiver `.poweredOn`.
-- Leituras de valores dinâmicos pela Central usando a função `.setNotifyValue(true, for: characteristic)` disparam a função `peripheralManager(_: CBPeripheralManager, : CBCentral, : CBCharacteristic)` do periférico, já leituras de valores estáticos usando a função `.readValue(for: characteristic)` pela Central, disparam `peripheralManager(_: CBPeripheralManager, :CBATTRequest)` do periférico.
+- Leituras de valores dinâmicos pela Central usando a função `.setNotifyValue(true, for: characteristic)` disparam a função `peripheralManager(_: CBPeripheralManager, : CBCentral, : CBCharacteristic)` do periférico, já leituras de valores estáticos usando a função `.readValue(for: characteristic)` pela Central disparam `peripheralManager(_: CBPeripheralManager, :CBATTRequest)` do periférico.
 
 ### macOS
 
@@ -695,7 +695,7 @@ class ViewController: NSViewController {
     // MARK: - Properties
     var manager: BluetoothManager?
 
-    // MARK: - Lifecyle
+    // MARK: - Life Cycle
     @IBAction func discover(_ sender: Any) {
 
         self.manager = BluetoothManager(delegate: self)
@@ -731,12 +731,12 @@ extension ViewController: BlueEar {
 
 #### Notas:
 
-- No nosso exemplo, a Central vai começar a escanear por periféricos quando clicarmor num botão chamado `Tap`.
-- Você só pode fazer alguma coisa com a central quando a função `centralManagerDidUpdateState(: CBCentralManager)` for chamada e o estado do periférico estiver `.poweredOn`.
+- No nosso exemplo, a Central vai começar a escanear por periféricos quando clicarmos num botão chamado `Tap`.
+- Você só pode fazer alguma coisa com a central quando a função `centralManagerDidUpdateState(: CBCentralManager)` for chamada e o estado da central estiver `.poweredOn`.
 - Note que o `CBPeripheralDelegate` é diferente do `CBPeripheralManagerDelegate` usado no periférico. Ambos são relacionados ao periférico, porém o `CBPeripheralDelegate` permite que a central escute eventos sobre o periférico.
 - Ao optar por ler resultados dinâmicos, a central se inscreve em características do periférico, assim sendo alertada por meio de notificações se o periférico alterar seu valor no qual ela esteja inscrita.
 - Quando a central descobre um periférico, devemos manter uma referência para ele, ou seja, devemos retê-lo fazendo com que uma variável dentro do nosso código o receba.
-- Os dados são trasmitidos em formato de `Data`, então você deve transformar o que quer transmitir neste tipo de dados para poder ser recebido corretamente no outro lado.
+- Os dados são transmitidos em formato de `Data`, então você deve transformar o que quer transmitir neste tipo de dados para poder ser recebido corretamente no outro lado.
 
 ### Resultado
 
@@ -748,7 +748,7 @@ Na imagem, temos o respectivo: *Log* do periférico, *iOS*, *macOS*, *Log* da ce
 
 ### Referências
 
-- [CoreBlueetooth](https://developer.apple.com/library/content/documentation/NetworkingInternetWeb/Conceptual/CoreBluetooth_concepts/AboutCoreBluetooth/Introduction.html)
+- [CoreBluetooth](https://developer.apple.com/library/content/documentation/NetworkingInternetWeb/Conceptual/CoreBluetooth_concepts/AboutCoreBluetooth/Introduction.html)
 
 ---
 
